@@ -17,9 +17,9 @@
     <dependencies>
 
         <dependency>
-            <groupId>org.taktik</groupId>
-            <artifactId>mpegts-streamer</artifactId>
-            <version>0.1.0_2</version>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>11</version>
         </dependency>
 
         <dependency>
