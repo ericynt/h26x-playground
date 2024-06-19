@@ -9,14 +9,15 @@ public class Macroblock {
     public static final int Y_BLOCKS_AMOUNT  = 4;
     public static final int CB_BLOCKS_AMOUNT = 1;
     public static final int CR_BLOCKS_AMOUNT = 1;
+    public static final int TOTAL_BLOCKS     = Y_BLOCKS_AMOUNT + CB_BLOCKS_AMOUNT + CR_BLOCKS_AMOUNT;
 
-    private Block[] yBlocks;
-    private Block   cbBlock;
-    private Block   crBlock;
+    private boolean different;
+
+    private Block[] blocks;
 
     public Macroblock () {
 
-        this.yBlocks = new Block[Y_BLOCKS_AMOUNT];
+        this.blocks = new Block[TOTAL_BLOCKS];
     }
 
     public byte[] toByteArray () {

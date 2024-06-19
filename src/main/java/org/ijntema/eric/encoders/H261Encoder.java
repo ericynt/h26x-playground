@@ -11,6 +11,7 @@ import org.ijntema.eric.model.frame.Picture;
 import org.ijntema.eric.model.frame.gob.GOB;
 import org.ijntema.eric.model.frame.gob.macroblock.Macroblock;
 import org.ijntema.eric.model.frame.gob.macroblock.block.Block;
+import org.ijntema.eric.model.frame.gob.macroblock.block.BlockType;
 
 public class H261Encoder {
 
@@ -54,25 +55,32 @@ public class H261Encoder {
                     for (int l = 0; l < GOB.MACROBLOCK_COLUMNS; l++) {
 
                         picture.getGobs()[i][j].getMacroblocks()[k][l] = new Macroblock();
+                        Macroblock macroblock = picture.getGobs()[i][j].getMacroblocks()[k][l];
                         for (int m = 0; m < Macroblock.Y_BLOCKS_AMOUNT; m++) {
 
-                            picture.getGobs()[i][j].getMacroblocks()[k][l].getYBlocks()[m] = new Block();
+                            Block block = new Block();
+                            block.setBlockType(BlockType.Y);
+
+                            macroblock.getBlocks()[m] = block;
                         }
-                        picture.getGobs()[i][j].getMacroblocks()[k][l].setCbBlock(new Block());
-                        picture.getGobs()[i][j].getMacroblocks()[k][l].setCrBlock(new Block());
+                        Block cB = new Block();
+                        cB.setBlockType(BlockType.CB);
+                        macroblock.getBlocks()[4] = cB;
+                        Block cR = new Block();
+                        cR.setBlockType(BlockType.CR);
+                        macroblock.getBlocks()[5] = cR;
 
                         Pair<Integer, Integer> startRowAndColumn = getMarcroblockStartRowAndColumn(i, j, k, l);
 
                         loadMacroblock(
                                 startRowAndColumn,
-                                picture.getGobs()[i][j].getMacroblocks()[k][l],
+                                macroblock,
                                 this.previousPicture,
                                 rgbToYCbCr(bufferedImage)
                         );
                         encodeMacroblock(
-                                startRowAndColumn,
-                                picture.getGobs()[i][j].getMacroblocks()[k][l],
-                                this.previousPicture
+                                macroblock,
+                                this.previousPicture.getGobs()[i][j].getMacroblocks()[k][l]
                         );
                     }
                 }
@@ -94,9 +102,8 @@ public class H261Encoder {
     }
 
     private void encodeMacroblock (
-            final Pair<Integer, Integer> pixelRowAndColumn,
             final Macroblock macroblock,
-            final Picture previousPicture
+            final Macroblock previousMacroblock
     ) {
 
     }
