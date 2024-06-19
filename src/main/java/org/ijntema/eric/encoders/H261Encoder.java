@@ -1,6 +1,8 @@
 package org.ijntema.eric.encoders;
 
+import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 
 import javafx.util.Pair;
@@ -22,24 +24,25 @@ public class H261Encoder {
 
     public void encode () throws IOException {
 
-        Picture[] pictures = loadImages(this.imagePaths);
+        Picture[] pictures = createPictures(this.imagePaths);
     }
 
-    private Picture[] loadImages (final String[] imagePaths) {
+    private Picture[] createPictures (final String[] imagePaths) throws IOException {
 
         Picture[] pictures = new Picture[imagePaths.length];
         for (int i = 0; i < imagePaths.length; i++) {
 
-            pictures[i] = loadImage(imagePaths[i], i);
+            pictures[i] = createPicture(imagePaths[i], i);
         }
 
         return pictures;
     }
 
-    private Picture loadImage (String imagePath, int pictureNumber) {
+    private Picture createPicture (String imagePath, int pictureNumber) throws IOException {
 
         Picture picture = new Picture();
         picture.setFrameType(pictureNumber == 0 ? FrameType.I_FRAME : FrameType.P_FRAME);
+        BufferedImage bufferedImage = loadImage(imagePath);
 
         for (int i = 0; i < Picture.GOB_ROWS; i++) {
 
@@ -60,8 +63,17 @@ public class H261Encoder {
 
                         Pair<Integer, Integer> startRowAndColumn = getMarcroblockStartRowAndColumn(i, j, k, l);
 
-                        loadMacroblockFromImage(startRowAndColumn, picture.getGobs()[i][j].getMacroblocks()[k][l], this.previousPicture, new BufferedImage());
-                        encodeMacroblock(startRowAndColumn, picture.getGobs()[i][j].getMacroblocks()[k][l], this.previousPicture);
+                        loadMacroblock(
+                                startRowAndColumn,
+                                picture.getGobs()[i][j].getMacroblocks()[k][l],
+                                this.previousPicture,
+                                rgbToYCbCr(bufferedImage)
+                        );
+                        encodeMacroblock(
+                                startRowAndColumn,
+                                picture.getGobs()[i][j].getMacroblocks()[k][l],
+                                this.previousPicture
+                        );
                     }
                 }
             }
@@ -72,19 +84,19 @@ public class H261Encoder {
         return picture;
     }
 
-    private void encodeMacroblock (
+    private void loadMacroblock (
             final Pair<Integer, Integer> pixelRowAndColumn,
             final Macroblock macroblock,
-            final Picture previousPicture
+            final Picture previousPicture,
+            final int[][][] yCbCr
     ) {
 
     }
 
-    private void loadMacroblockFromImage (
+    private void encodeMacroblock (
             final Pair<Integer, Integer> pixelRowAndColumn,
             final Macroblock macroblock,
-            final Picture previousPicture,
-            final BufferedImage bufferedImage
+            final Picture previousPicture
     ) {
 
     }
@@ -102,20 +114,28 @@ public class H261Encoder {
         );
     }
 
-    private void rgbToYCbCrPicture (BufferedImage image) {
+    private BufferedImage loadImage (String imagePath) throws IOException {
 
-        double[][][] yCbCr = new double[height][width][3];
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
+        return ImageIO.read(new File(imagePath));
+    }
+
+    private int[][][] rgbToYCbCr (BufferedImage image) {
+
+        int[][][] yCbCr = new int[Picture.HEIGHT][Picture.WIDTH][3];
+        for (int y = 0; y < Picture.HEIGHT; y++) {
+
+            for (int x = 0; x < Picture.WIDTH; x++) {
+
                 int rgb = image.getRGB(x, y);
                 int r = (rgb >> 16) & 0xFF;
                 int g = (rgb >> 8) & 0xFF;
                 int b = rgb & 0xFF;
-                yCbCr[y][x][0] = 0.299 * r + 0.587 * g + 0.114 * b;
-                yCbCr[y][x][1] = -0.1687 * r - 0.3313 * g + 0.5 * b + 128;
-                yCbCr[y][x][2] = 0.5 * r - 0.4187 * g - 0.0813 * b + 128;
+                yCbCr[y][x][0] = (int) (0.299 * r + 0.587 * g + 0.114 * b);
+                yCbCr[y][x][1] = (int) (-0.1687 * r - 0.3313 * g + 0.5 * b + 128);
+                yCbCr[y][x][2] = (int) (0.5 * r - 0.4187 * g - 0.0813 * b + 128);
             }
         }
-    }
 
+        return yCbCr;
+    }
 }
