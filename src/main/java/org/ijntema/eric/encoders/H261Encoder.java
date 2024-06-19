@@ -55,12 +55,11 @@ public class H261Encoder {
                         picture.getGobs()[i][j].getMacroblocks()[k][l] = new Macroblock();
                         Macroblock macroblock = picture.getGobs()[i][j].getMacroblocks()[k][l];
 
-                        Pair<Integer, Integer> startRowAndColumn = getMarcroblockStartRowAndColumn(i, j, k, l);
-
                         loadMacroblock(
-                                startRowAndColumn,
+                                getMarcroblockStartRowAndColumn(i, j, k, l),
                                 macroblock,
                                 this.previousPicture,
+                                picture.getFrameType(),
                                 rgbToYCbCr(bufferedImage)
                         );
                         encodeMacroblock(
@@ -81,9 +80,57 @@ public class H261Encoder {
             final Pair<Integer, Integer> pixelRowAndColumn,
             final Macroblock macroblock,
             final Picture previousPicture,
+            final FrameType frameType,
             final int[][][] yCbCr
     ) {
 
+
+        switch(frameType) {
+
+            case I_FRAME: {
+
+                for (int i = pixelRowAndColumn.getKey(); i < pixelRowAndColumn.getKey() + 16; i++) {
+
+                    for (int j = pixelRowAndColumn.getValue(); j < pixelRowAndColumn.getValue() + 16; j++) {
+
+                        // Y
+                        int[][][] blocks = macroblock.getBlocks();
+                        if (i < 8 && j < 8) {
+
+                            blocks[0][i][j] = yCbCr[i][j][0];
+                        } else if (i < 8) {
+
+                            blocks[1][i][j - 8] = yCbCr[i][j][0];
+                        } else if (j < 8) {
+
+                            blocks[2][i - 8][j] = yCbCr[i][j][0];
+                        } else {
+
+                            blocks[3][i - 8][j - 8] = yCbCr[i][j][0];
+                        }
+
+                        if (i % 2 == 0 && j % 2 == 0) {
+
+                            // CbCr
+                            blocks[4][i / 2][j / 2] = yCbCr[i][j][1];
+                            blocks[5][i / 2][j / 2] = yCbCr[i][j][2];
+                        }
+                    }
+                }
+
+                break;
+            }
+            case P_FRAME: {
+
+                // implement
+
+                break;
+            }
+            default: {
+
+                throw new RuntimeException("Unsupported frame type");
+            }
+        }
     }
 
     private void encodeMacroblock (
