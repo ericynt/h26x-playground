@@ -11,7 +11,7 @@ public class Macroblock implements ToByteArray {
     public static final int CR_BLOCKS_AMOUNT = 1;
     public static final int TOTAL_BLOCKS     = Y_BLOCKS_AMOUNT + CB_BLOCKS_AMOUNT + CR_BLOCKS_AMOUNT;
 
-    private boolean different;
+    private boolean different = false;
 
     private int[][][] blocks;
 
