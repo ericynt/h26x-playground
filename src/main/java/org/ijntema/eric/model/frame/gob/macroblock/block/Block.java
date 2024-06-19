@@ -1,9 +1,10 @@
 package org.ijntema.eric.model.frame.gob.macroblock.block;
 
 import lombok.Data;
+import org.ijntema.eric.model.ToByteArray;
 
 @Data
-public class Block {
+public class Block implements ToByteArray {
 
     private BlockType blockType;
 
@@ -17,6 +18,7 @@ public class Block {
         this.pixels = new int[PIXEL_ROWS][PIXEL_COLUMNS];
     }
 
+    @Override
     public byte[] toByteArray () {
 
         return null;
