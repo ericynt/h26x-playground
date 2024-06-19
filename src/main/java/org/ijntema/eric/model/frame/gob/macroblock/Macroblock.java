@@ -2,7 +2,6 @@ package org.ijntema.eric.model.frame.gob.macroblock;
 
 import lombok.Data;
 import org.ijntema.eric.model.ToByteArray;
-import org.ijntema.eric.model.frame.gob.macroblock.block.Block;
 
 @Data
 public class Macroblock implements ToByteArray {
@@ -14,11 +13,11 @@ public class Macroblock implements ToByteArray {
 
     private boolean different;
 
-    private Block[] blocks;
+    private int[][][] blocks;
 
     public Macroblock () {
 
-        this.blocks = new Block[TOTAL_BLOCKS];
+        this.blocks = new int[TOTAL_BLOCKS][8][8];
     }
 
     @Override

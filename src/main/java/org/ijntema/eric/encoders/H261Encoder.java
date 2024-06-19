@@ -10,8 +10,6 @@ import org.ijntema.eric.model.frame.FrameType;
 import org.ijntema.eric.model.frame.Picture;
 import org.ijntema.eric.model.frame.gob.GOB;
 import org.ijntema.eric.model.frame.gob.macroblock.Macroblock;
-import org.ijntema.eric.model.frame.gob.macroblock.block.Block;
-import org.ijntema.eric.model.frame.gob.macroblock.block.BlockType;
 
 public class H261Encoder {
 
@@ -56,19 +54,6 @@ public class H261Encoder {
 
                         picture.getGobs()[i][j].getMacroblocks()[k][l] = new Macroblock();
                         Macroblock macroblock = picture.getGobs()[i][j].getMacroblocks()[k][l];
-                        for (int m = 0; m < Macroblock.Y_BLOCKS_AMOUNT; m++) {
-
-                            Block block = new Block();
-                            block.setBlockType(BlockType.Y);
-
-                            macroblock.getBlocks()[m] = block;
-                        }
-                        Block cB = new Block();
-                        cB.setBlockType(BlockType.CB);
-                        macroblock.getBlocks()[4] = cB;
-                        Block cR = new Block();
-                        cR.setBlockType(BlockType.CR);
-                        macroblock.getBlocks()[5] = cR;
 
                         Pair<Integer, Integer> startRowAndColumn = getMarcroblockStartRowAndColumn(i, j, k, l);
 
@@ -79,8 +64,8 @@ public class H261Encoder {
                                 rgbToYCbCr(bufferedImage)
                         );
                         encodeMacroblock(
-                                macroblock,
-                                this.previousPicture.getGobs()[i][j].getMacroblocks()[k][l]
+                                macroblock.getBlocks(),
+                                this.previousPicture.getGobs()[i][j].getMacroblocks()[k][l].getBlocks()
                         );
                     }
                 }
@@ -102,8 +87,8 @@ public class H261Encoder {
     }
 
     private void encodeMacroblock (
-            final Macroblock macroblock,
-            final Macroblock previousMacroblock
+            int[][][] currentMacroblock,
+            int[][][] previousMacroblock
     ) {
 
     }
