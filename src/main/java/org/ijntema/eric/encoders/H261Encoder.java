@@ -185,9 +185,4 @@ public class H261Encoder {
 
         return yCbCr;
     }
-
-    private static void updateDiff (final Macroblock macroblock, int value) {
-
-        macroblock.setDifferent(value != 0);
-    }
 }
