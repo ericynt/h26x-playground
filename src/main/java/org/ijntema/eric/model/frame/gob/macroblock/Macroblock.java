@@ -9,7 +9,9 @@ public class Macroblock implements ToByteArray {
     public static final int Y_BLOCKS_AMOUNT  = 4;
     public static final int CB_BLOCKS_AMOUNT = 1;
     public static final int CR_BLOCKS_AMOUNT = 1;
+    // YCbCr 4:2:0
     public static final int TOTAL_BLOCKS     = Y_BLOCKS_AMOUNT + CB_BLOCKS_AMOUNT + CR_BLOCKS_AMOUNT;
+    public static final int BLOCK_SIZE       = 8;
 
     private boolean different = false;
 
@@ -17,7 +19,7 @@ public class Macroblock implements ToByteArray {
 
     public Macroblock () {
 
-        this.blocks = new int[TOTAL_BLOCKS][8][8];
+        this.blocks = new int[TOTAL_BLOCKS][BLOCK_SIZE][BLOCK_SIZE];
     }
 
     @Override
