@@ -196,9 +196,6 @@ public class H261Encoder {
 
     private static void updateDiff (final Macroblock macroblock, int value) {
 
-        if (value != 0) {
-
-            macroblock.setDifferent(true);
-        }
+        macroblock.setDifferent(value != 0);
     }
 }
