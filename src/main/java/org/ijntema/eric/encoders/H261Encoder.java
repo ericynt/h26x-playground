@@ -56,7 +56,7 @@ public class H261Encoder {
                         Macroblock macroblock = picture.getGobs()[i][j].getMacroblocks()[k][l];
                         Macroblock previousMacroblock = this.previousPicture == null ? null : this.previousPicture.getGobs()[i][j].getMacroblocks()[k][l];
 
-                        preprocess(
+                        preprocessing(
                                 getMarcroblockStartRowAndColumn(i, j, k, l),
                                 macroblock,
                                 previousMacroblock,
@@ -64,8 +64,9 @@ public class H261Encoder {
                                 rgbToYCbCr(bufferedImage)
                         );
                         encodeMacroblock(
-                                macroblock.getBlocks(),
-                                previousMacroblock.getBlocks()
+                                macroblock,
+                                previousMacroblock,
+                                picture.getFrameType()
                         );
                     }
                 }
@@ -77,7 +78,7 @@ public class H261Encoder {
         return picture;
     }
 
-    private void preprocess (
+    private void preprocessing (
             final Pair<Integer, Integer> pixelRowAndColumn,
             final Macroblock macroblock,
             final Macroblock previousMacroblock,
@@ -95,40 +96,15 @@ public class H261Encoder {
                 if (i < 8 && j < 8) {
 
                     blocks[0][i][j] = yCbCr[i][j][0];
-
-                    // Calculate diff. if it's a P-frame
-                    if (isPFrame) {
-
-                        blocks[0][i][j] -= previousMacroblock.getBlocks()[0][i][j];
-                        updateDiff(macroblock, blocks[0][i][j]);
-                    }
                 } else if (i < 8) {
 
                     blocks[1][i][j - 8] = yCbCr[i][j][0];
-
-                    if (isPFrame) {
-
-                        blocks[1][i][j - 8] -= previousMacroblock.getBlocks()[1][i][j - 8];
-                        updateDiff(macroblock, blocks[1][i][j - 8]);
-                    }
                 } else if (j < 8) {
 
                     blocks[2][i - 8][j] = yCbCr[i][j][0];
-
-                    if (isPFrame) {
-
-                        blocks[2][i - 8][j] -= previousMacroblock.getBlocks()[2][i - 8][j];
-                        updateDiff(macroblock, blocks[2][i - 8][j]);
-                    }
                 } else {
 
                     blocks[3][i - 8][j - 8] = yCbCr[i][j][0];
-
-                    if (isPFrame) {
-
-                        blocks[3][i - 8][j - 8] -= previousMacroblock.getBlocks()[3][i - 8][j - 8];
-                        updateDiff(macroblock, blocks[3][i - 8][j - 8]);
-                    }
                 }
 
                 // CbCr
@@ -136,24 +112,39 @@ public class H261Encoder {
 
                     blocks[4][i / 2][j / 2] = yCbCr[i][j][1];
                     blocks[5][i / 2][j / 2] = yCbCr[i][j][2];
-
-                    if (isPFrame) {
-
-                        blocks[4][i / 2][j / 2] -= previousMacroblock.getBlocks()[4][i / 2][j / 2];
-                        blocks[5][i / 2][j / 2] -= previousMacroblock.getBlocks()[5][i / 2][j / 2];
-                        updateDiff(macroblock, blocks[4][i / 2][j / 2]);
-                        updateDiff(macroblock, blocks[5][i / 2][j / 2]);
-                    }
                 }
             }
         }
     }
 
     private void encodeMacroblock (
-            int[][][] currentMacroblock,
-            int[][][] previousMacroblock
+            Macroblock macroblock,
+            Macroblock previousMacroblock,
+            FrameType frameType
     ) {
 
+        // Calculate diff. if it's a P-frame
+        for (int i = 0; i < Macroblock.TOTAL_BLOCKS; i++) {
+
+            int[][] block = macroblock.getBlocks()[i];
+            int[][] previousBlock = previousMacroblock.getBlocks()[i];
+            for (int j = 0; j < block.length; j++) {
+
+                for (int k = 0; k < block[j].length; k++) {
+
+                    if (frameType == FrameType.I_FRAME) {
+
+                        block[j][k] -= previousBlock[j][k];
+                        macroblock.setDifferent(block[j][k] != 0);
+                    }
+                }
+            }
+        }
+        // DCT
+        // quantize
+        // zigzag
+        // run length encoding
+        // huffman encoding
     }
 
     private Pair<Integer, Integer> getMarcroblockStartRowAndColumn (
