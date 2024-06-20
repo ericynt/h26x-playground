@@ -1,6 +1,6 @@
 package org.ijntema.eric.model;
 
-public interface ToByteArray {
+public interface ByteArrayable {
 
         byte[] toByteArray ();
 }

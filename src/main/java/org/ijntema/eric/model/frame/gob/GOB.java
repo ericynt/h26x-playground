@@ -1,11 +1,11 @@
 package org.ijntema.eric.model.frame.gob;
 
 import lombok.Data;
-import org.ijntema.eric.model.ToByteArray;
+import org.ijntema.eric.model.ByteArrayable;
 import org.ijntema.eric.model.frame.gob.macroblock.Macroblock;
 
 @Data
-public class GOB implements ToByteArray {
+public class GOB implements ByteArrayable {
 
     public static final int MACROBLOCK_ROWS    = 3;
     public static final int MACROBLOCK_COLUMNS = 11;

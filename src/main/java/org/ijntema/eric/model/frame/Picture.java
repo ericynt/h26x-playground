@@ -1,11 +1,11 @@
 package org.ijntema.eric.model.frame;
 
 import lombok.Data;
-import org.ijntema.eric.model.ToByteArray;
+import org.ijntema.eric.model.ByteArrayable;
 import org.ijntema.eric.model.frame.gob.GOB;
 
 @Data
-public class Picture implements ToByteArray {
+public class Picture implements ByteArrayable {
 
     public static final int WIDTH       = 352;
     public static final int HEIGHT      = 288;
