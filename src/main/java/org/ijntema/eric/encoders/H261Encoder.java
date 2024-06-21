@@ -16,6 +16,39 @@ public class H261Encoder {
     private final String[] imagePaths;
     private       Picture  previousPicture;
 
+    private static final int[][] ZIGZAG_ORDER = {
+            {0, 1, 5, 6, 14, 15, 27, 28},
+            {2, 4, 7, 13, 16, 26, 29, 42},
+            {3, 8, 12, 17, 25, 30, 41, 43},
+            {9, 11, 18, 24, 31, 40, 44, 53},
+            {10, 19, 23, 32, 39, 45, 52, 54},
+            {20, 22, 33, 38, 46, 51, 55, 60},
+            {21, 34, 37, 47, 50, 56, 59, 61},
+            {35, 36, 48, 49, 57, 58, 62, 63}
+    };
+
+    private static final int[][] I_FRAME_QUANTIZATION_TABLE = {
+            {8, 16, 19, 22, 26, 27, 29, 34},
+            {16, 16, 22, 24, 27, 29, 34, 37},
+            {19, 22, 26, 27, 29, 34, 34, 38},
+            {22, 22, 26, 27, 29, 34, 37, 40},
+            {22, 26, 27, 29, 32, 35, 40, 48},
+            {26, 27, 29, 32, 35, 40, 48, 58},
+            {26, 27, 29, 34, 38, 46, 56, 69},
+            {27, 29, 35, 38, 46, 56, 69, 83}
+    };
+
+    private static final int[][] P_FRAME_QUANTIZATION_TABLE = {
+            {16, 17, 18, 19, 20, 21, 22, 23},
+            {17, 18, 19, 20, 21, 22, 23, 24},
+            {18, 19, 20, 21, 22, 23, 24, 25},
+            {19, 20, 21, 22, 23, 24, 26, 27},
+            {20, 21, 22, 23, 25, 26, 27, 28},
+            {21, 22, 23, 24, 26, 27, 28, 30},
+            {22, 23, 24, 26, 27, 28, 30, 31},
+            {23, 24, 25, 27, 28, 30, 31, 33}
+    };
+
     public H261Encoder (final String[] imagePaths) {
 
         this.imagePaths = imagePaths;
@@ -119,12 +152,36 @@ public class H261Encoder {
     ) {
 
         calculateIFrameDiff(macroblock, previousMacroblock, frameType);
-        // DCT
-        // quantize
-        // zigzag
-        // run length encoding
-        // huffman encoding
+        double[][][] dct = dct(macroblock.getBlocks());
+        int[][][] quantized = quantize(dct);
+        int[][][] zigzagOrdered = zigzagOrder(dct);
+        int[] runLengthed = runLength(zigzagOrdered);
+        byte[] huffmanEncoded = huffmanEncode(runLengthed);
     }
+
+    public double[][][] dct (int[][][] blocks) {
+
+        return null;
+    }
+
+    public int[][][] quantize (double[][][] dct) {
+
+        return null;
+    }
+
+    public int[][][] zigzagOrder (double[][][] dct) {
+
+        return null;
+    }
+
+    private int[] runLength (final int[][][] zigzagged) {
+        return null;
+    }
+
+    private byte[] huffmanEncode (final int[] runLengthed) {
+        return null;
+    }
+
 
     private static void calculateIFrameDiff (final Macroblock macroblock, final Macroblock previousMacroblock, final FrameType frameType) {
 

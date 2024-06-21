@@ -135,6 +135,7 @@ public class JpegEncoder {
 
     // Zigzag ordering
     private static int[] zigzagOrdering(int[][] quantizedBlock) {
+
         int[] zigzag = new int[64];
         int[][] zigzagOrder = {
             {0, 1, 5, 6, 14, 15, 27, 28},
