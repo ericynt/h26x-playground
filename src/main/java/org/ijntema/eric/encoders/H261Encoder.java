@@ -13,9 +13,9 @@ import org.ijntema.eric.model.frame.gob.macroblock.Macroblock;
 
 public class H261Encoder {
 
-    private Picture               previousPicture;
-    private SpaceInvaderAnimation frameGenerator = new SpaceInvaderAnimation();
-    private boolean               iFrameOnlyMode = true;
+    private       Picture               previousPicture;
+    private final SpaceInvaderAnimation frameGenerator = new SpaceInvaderAnimation();
+    private       boolean               iFrameOnlyMode = true;
 
     private static final int     I_FRAME_INTERVAL           = 24;
     private static final int     FRAMES_PER_SECOND          = 20;
