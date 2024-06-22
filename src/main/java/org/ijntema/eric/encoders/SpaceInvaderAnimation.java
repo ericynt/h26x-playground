@@ -125,6 +125,7 @@ public class SpaceInvaderAnimation extends JPanel implements Runnable {
         g.drawImage(frame, 0, 0, this);
     }
 
+    // Only used to test the animation
     @Override
     public void run() {
         while (true) {
