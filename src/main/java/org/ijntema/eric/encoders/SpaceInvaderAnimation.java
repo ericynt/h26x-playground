@@ -7,44 +7,44 @@ import java.util.ArrayList;
 import java.util.Random;
 
 public class SpaceInvaderAnimation extends JPanel implements Runnable {
-    private static final int WIDTH = 352;
-    private static final int HEIGHT = 288;
-    private static final int FRAME_RATE = 30;
-    private static final int INVADER_WIDTH = 40;
-    private static final int INVADER_HEIGHT = 30;
-    private static final int INVADER_STEP = 5;
-    private static final int STAR_COUNT = 25;
-    private static final int TWINKLE_RATE = 50;
-    private static final int LAYER_COUNT = 3;
-    private int invaderX = 0;
-    private int invaderY = HEIGHT / 2 - INVADER_HEIGHT / 2;
-    private int directionX = 1; // 1 for right, -1 for left
-    private int directionY = 0; // 1 for down, -1 for up, 0 for no vertical movement
-    private int animationFrame = 0;
-    private static final int NUM_FRAMES = 2;
-    private Random random = new Random();
-    private ArrayList<Star> stars = new ArrayList<>();
-    private int twinkleCounter = 0;
-    private int[] layerOffsets = new int[LAYER_COUNT];
-    private int[] layerSpeeds = {1, 2, 3}; // Different speeds for each layer
-    private int planetStartX = 100; // Starting X position of the planet (fixed)
-    private int planetY = 100; // Y position of the planet (fixed)
-    private double orbitRadius = 100.0; // Radius of the circular orbit
-    private double orbitSpeed = 0.01; // Speed of orbit in radians per frame
-    private double currentAngle = 0.0; // Current angle in radians
+    private static final int             WIDTH          = 352;
+    private static final int             HEIGHT         = 288;
+    private static final int             FRAME_RATE     = 30;
+    private static final int             INVADER_WIDTH  = 40;
+    private static final int             INVADER_HEIGHT = 30;
+    private static final int             INVADER_STEP   = 5;
+    private static final int             STAR_COUNT     = 25;
+    private static final int             TWINKLE_RATE   = 50;
+    private static final int             LAYER_COUNT    = 3;
+    private              int             invaderX       = 0;
+    private              int             invaderY       = HEIGHT / 2 - INVADER_HEIGHT / 2;
+    private              int             directionX     = 1; // 1 for right, -1 for left
+    private              int             directionY     = 0; // 1 for down, -1 for up, 0 for no vertical movement
+    private              int             animationFrame = 0;
+    private static final int             NUM_FRAMES     = 2;
+    private              Random          random         = new Random();
+    private              ArrayList<Star> stars          = new ArrayList<>();
+    private              int             twinkleCounter = 0;
+    private              int[]           layerOffsets   = new int[LAYER_COUNT];
+    private              int[]           layerSpeeds    = {1, 2, 3}; // Different speeds for each layer
+    private              int             planetStartX   = 100; // Starting X position of the planet (fixed)
+    private              int             planetY        = 100; // Y position of the planet (fixed)
+    private              double          orbitRadius    = 100.0; // Radius of the circular orbit
+    private              double          orbitSpeed     = 0.01; // Speed of orbit in radians per frame
+    private              double          currentAngle   = 0.0; // Current angle in radians
 
-    public SpaceInvaderAnimation() {
+    public SpaceInvaderAnimation () {
         initializeStars();
         new Thread(this).start();
     }
 
-    private void initializeStars() {
+    private void initializeStars () {
         for (int i = 0; i < STAR_COUNT; i++) {
             stars.add(new Star(random.nextInt(WIDTH), random.nextInt(HEIGHT), random.nextInt(3) + 1));
         }
     }
 
-    private BufferedImage createFrame(int invaderX, int invaderY, int animationFrame) {
+    private BufferedImage createFrame (int invaderX, int invaderY, int animationFrame) {
         BufferedImage image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
         Graphics g = image.getGraphics();
         drawBackground(g);
@@ -53,7 +53,7 @@ public class SpaceInvaderAnimation extends JPanel implements Runnable {
         return image;
     }
 
-    private void drawBackground(Graphics g) {
+    private void drawBackground (Graphics g) {
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, WIDTH, HEIGHT);
 
@@ -66,19 +66,21 @@ public class SpaceInvaderAnimation extends JPanel implements Runnable {
         drawPlanet(g);
     }
 
-    private void drawLayer(Graphics g, int layer) {
+    private void drawLayer (Graphics g, int layer) {
         int offset = layerOffsets[layer];
 
         // Draw stars for each layer
         for (Star star : stars) {
             g.setColor(Color.WHITE);
             int starX = star.x + offset / (layer + 1); // Move slower for farther layers
-            if (starX >= WIDTH) starX -= WIDTH;
+            if (starX >= WIDTH) {
+                starX -= WIDTH;
+            }
             g.fillRect(starX, star.y, star.size, star.size);
         }
     }
 
-    private void drawPlanet(Graphics g) {
+    private void drawPlanet (Graphics g) {
         int planetX = calculatePlanetXPosition(); // Calculate current X position of the planet
         int planetY = calculatePlanetYPosition(); // Calculate current Y position of the planet
 
@@ -90,17 +92,17 @@ public class SpaceInvaderAnimation extends JPanel implements Runnable {
         g.fillOval(planetX + 70, planetY + 40, 15, 15); // Crater 3
     }
 
-    private int calculatePlanetXPosition() {
+    private int calculatePlanetXPosition () {
         // Calculate the current X position of the planet based on circular motion
         return (int) (planetStartX + orbitRadius * Math.cos(currentAngle));
     }
 
-    private int calculatePlanetYPosition() {
+    private int calculatePlanetYPosition () {
         // Calculate the current Y position of the planet based on circular motion
         return (int) (planetY + orbitRadius * Math.sin(currentAngle));
     }
 
-    private void drawSpaceInvader(Graphics g, int x, int y, int frame) {
+    private void drawSpaceInvader (Graphics g, int x, int y, int frame) {
         g.setColor(Color.GREEN);
         // Draw a more detailed and animated space invader
         if (frame == 0) {
@@ -119,7 +121,7 @@ public class SpaceInvaderAnimation extends JPanel implements Runnable {
     }
 
     @Override
-    protected void paintComponent(Graphics g) {
+    protected void paintComponent (Graphics g) {
         super.paintComponent(g);
         BufferedImage frame = createFrame(invaderX, invaderY, animationFrame);
         g.drawImage(frame, 0, 0, this);
@@ -127,7 +129,7 @@ public class SpaceInvaderAnimation extends JPanel implements Runnable {
 
     // Only used to test the animation
     @Override
-    public void run() {
+    public void run () {
         while (true) {
             updateInvaderPosition();
             updateLayerOffsets();
@@ -144,7 +146,7 @@ public class SpaceInvaderAnimation extends JPanel implements Runnable {
     }
 
     // Method to generate a frame and return it as BufferedImage
-    public BufferedImage generateFrame() {
+    public BufferedImage generateFrame () {
 
         BufferedImage frame = createFrame(invaderX, invaderY, animationFrame);
         updateInvaderPosition();
@@ -156,7 +158,7 @@ public class SpaceInvaderAnimation extends JPanel implements Runnable {
         return frame;
     }
 
-    private void updateInvaderPosition() {
+    private void updateInvaderPosition () {
         invaderX += INVADER_STEP * directionX;
         invaderY += INVADER_STEP * directionY;
 
@@ -181,7 +183,7 @@ public class SpaceInvaderAnimation extends JPanel implements Runnable {
         }
     }
 
-    private void updateLayerOffsets() {
+    private void updateLayerOffsets () {
         for (int layer = 0; layer < LAYER_COUNT; layer++) {
             layerOffsets[layer] += layerSpeeds[layer];
             if (layerOffsets[layer] >= WIDTH) {
@@ -190,7 +192,7 @@ public class SpaceInvaderAnimation extends JPanel implements Runnable {
         }
     }
 
-    private void updatePlanetPosition() {
+    private void updatePlanetPosition () {
         // Update the angle for circular motion
         currentAngle += orbitSpeed;
 
@@ -200,7 +202,7 @@ public class SpaceInvaderAnimation extends JPanel implements Runnable {
         }
     }
 
-    private void twinkleStars() {
+    private void twinkleStars () {
         twinkleCounter++;
         if (twinkleCounter % TWINKLE_RATE == 0) {
             int index = random.nextInt(stars.size());
@@ -208,7 +210,7 @@ public class SpaceInvaderAnimation extends JPanel implements Runnable {
         }
     }
 
-    public static void main(String[] args) {
+    public static void main (String[] args) {
         JFrame frame = new JFrame("Space Invader Animation");
         SpaceInvaderAnimation animation = new SpaceInvaderAnimation();
         frame.add(animation);
@@ -222,13 +224,13 @@ class Star {
     int x, y;
     int size;
 
-    public Star(int x, int y, int size) {
+    public Star (int x, int y, int size) {
         this.x = x;
         this.y = y;
         this.size = size;
     }
 
-    public void twinkle() {
+    public void twinkle () {
         this.size = (this.size % 3) + 1; // Change star size to create a twinkling effect
     }
 }
