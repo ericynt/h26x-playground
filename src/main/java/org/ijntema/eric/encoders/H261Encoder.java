@@ -1,11 +1,12 @@
 package org.ijntema.eric.encoders;
 
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import javafx.util.Pair;
+import org.ijntema.eric.encoders.frames.SpaceInvaderAnimation;
 import org.ijntema.eric.model.frame.FrameType;
 import org.ijntema.eric.model.frame.Picture;
 import org.ijntema.eric.model.frame.gob.GOB;
@@ -13,8 +14,11 @@ import org.ijntema.eric.model.frame.gob.macroblock.Macroblock;
 
 public class H261Encoder {
 
-    private final String[] imagePaths;
-    private       Picture  previousPicture;
+    private Picture               previousPicture;
+    private SpaceInvaderAnimation frameGenerator = new SpaceInvaderAnimation();
+    private boolean               iFrameOnlyMode = true;
+
+    private static final int I_FRAME_INTERVAL = 24;
 
     private static final int[][] ZIGZAG_ORDER = {
             {0, 1, 5, 6, 14, 15, 27, 28},
@@ -49,32 +53,45 @@ public class H261Encoder {
             {23, 24, 25, 27, 28, 30, 31, 33}
     };
 
-    public H261Encoder (final String[] imagePaths) {
+    public H261Encoder (final boolean mode) {
 
-        this.imagePaths = imagePaths;
+        this.iFrameOnlyMode = mode;
     }
 
     public void encode () throws IOException {
 
-        Picture[] pictures = createPictures(this.imagePaths);
-    }
+        int count = 0;
 
-    private Picture[] createPictures (final String[] imagePaths) throws IOException {
+        while (true) {
 
-        Picture[] pictures = new Picture[imagePaths.length];
-        for (int i = 0; i < imagePaths.length; i++) {
+            FrameType frameType;
+            if (!this.iFrameOnlyMode && count % I_FRAME_INTERVAL == 0) {
 
-            pictures[i] = createPicture(imagePaths[i], i);
+                frameType = FrameType.P_FRAME;
+            } else {
+
+                frameType = FrameType.I_FRAME;
+            }
+
+            try {
+
+                Picture picture = createPicture(frameType);
+
+                Thread.sleep(1000 / 20);
+            } catch (InterruptedException e) {
+
+                e.printStackTrace();
+            }
+
+            count++;
         }
-
-        return pictures;
     }
 
-    private Picture createPicture (String imagePath, int pictureNumber) throws IOException {
+    private Picture createPicture (FrameType frametype) throws IOException {
 
         Picture picture = new Picture();
-        picture.setFrameType(pictureNumber == 0 ? FrameType.I_FRAME : FrameType.P_FRAME);
-        BufferedImage bufferedImage = loadImage(imagePath);
+        picture.setFrameType(frametype);
+        BufferedImage bufferedImage = loadImage();
 
         for (int i = 0; i < Picture.GOB_ROWS; i++) {
 
@@ -152,34 +169,138 @@ public class H261Encoder {
     ) {
 
         calculateIFrameDiff(macroblock, previousMacroblock, frameType);
-        double[][][] dct = dct(macroblock.getBlocks());
-        int[][][] quantized = quantize(dct);
-        int[][][] zigzagOrdered = zigzagOrder(dct);
-        int[] runLengthed = runLength(zigzagOrdered);
-        byte[] huffmanEncoded = huffmanEncode(runLengthed);
+
+        for (int i = 0; i < Macroblock.TOTAL_BLOCKS; i++) {
+
+            int[][] block = macroblock.getBlocks()[i];
+            double[][] dctBlock = dctTransform(block);
+            int[][] quantizedBlock = quantize(dctBlock);
+            int[] zigzagOrderSequence = zigzagOrderSequence(quantizedBlock);
+            int[] runLengthedSequence = runLength(zigzagOrderSequence);
+            byte[] huffmanEncoded = huffmanEncode(runLengthedSequence);
+        }
     }
 
-    public double[][][] dct (int[][][] blocks) {
+    public double[][] dctTransform (int[][] block) {
 
-        return null;
+        int n = Macroblock.BLOCK_SIZE, m = Macroblock.BLOCK_SIZE;
+        double pi = 3.142857;
+
+        int i, j, k, l;
+
+        // dct will store the discrete cosine transform
+        double[][] dctBlock = new double[m][n];
+
+        double ci, cj, dct, sum;
+
+        for (i = 0; i < m; i++) {
+            for (j = 0; j < n; j++) {
+                // ci and cj depends on frequency as well as
+                // number of row and columns of specified matrix
+                if (i == 0) {
+                    ci = 1 / Math.sqrt(m);
+                } else {
+                    ci = Math.sqrt(2) / Math.sqrt(m);
+                }
+
+                if (j == 0) {
+                    cj = 1 / Math.sqrt(n);
+                } else {
+                    cj = Math.sqrt(2) / Math.sqrt(n);
+                }
+
+                // sum will temporarily store the sum of
+                // cosine signals
+                sum = 0;
+                for (k = 0; k < m; k++) {
+                    for (l = 0; l < n; l++) {
+                        dct = block[k][l] *
+                                Math.cos((2 * k + 1) * i * pi / (2 * m)) *
+                                Math.cos((2 * l + 1) * j * pi / (2 * n));
+                        sum = sum + dct;
+                    }
+                }
+                dctBlock[i][j] = ci * cj * sum;
+            }
+        }
+
+        return dctBlock;
     }
 
-    public int[][][] quantize (double[][][] dct) {
+    public int[][] quantize (double[][] block) {
 
-        return null;
+        int[][] quantizedBlocks = new int[Macroblock.BLOCK_SIZE][Macroblock.BLOCK_SIZE];
+        for (int i = 0; i < Macroblock.BLOCK_SIZE; i++) {
+
+            for (int j = 0; j < Macroblock.BLOCK_SIZE; j++) {
+
+                quantizedBlocks[i][j] =
+                        (int) Math.round(block[i][j] / P_FRAME_QUANTIZATION_TABLE[i][j]);
+            }
+        }
+
+        return quantizedBlocks;
     }
 
-    public int[][][] zigzagOrder (double[][][] dct) {
+    public int[] zigzagOrderSequence (int[][] block) {
 
-        return null;
+        int[] zigzag = new int[64];
+        int[][] zigzagOrder = {
+                {0, 1, 5, 6, 14, 15, 27, 28},
+                {2, 4, 7, 13, 16, 26, 29, 42},
+                {3, 8, 12, 17, 25, 30, 41, 43},
+                {9, 11, 18, I_FRAME_INTERVAL, 31, 40, 44, 53},
+                {10, 19, 23, 32, 39, 45, 52, 54},
+                {20, 22, 33, 38, 46, 51, 55, 60},
+                {21, 34, 37, 47, 50, 56, 59, 61},
+                {35, 36, 48, 49, 57, 58, 62, 63}
+        };
+        for (int i = 0; i < 8; i++) {
+
+            for (int j = 0; j < 8; j++) {
+
+                zigzag[zigzagOrder[i][j]] = block[i][j];
+            }
+        }
+
+        return zigzag;
     }
 
-    private int[] runLength (final int[][][] zigzagged) {
-        return null;
+    private int[] runLength (final int[] sequence) {
+
+        // List to store RLE encoded values
+        List<Integer> encodedList = new ArrayList<>();
+        int count = 1;
+
+        int previous = sequence[0];
+
+        for (int i = 1; i < sequence.length; i++) {
+            int current = sequence[i];
+            if (current == previous) {
+                count++;
+            } else {
+                encodedList.add(previous);
+                encodedList.add(count);
+                previous = current;
+                count = 1;
+            }
+        }
+        // Append the last run
+        encodedList.add(previous);
+        encodedList.add(count);
+
+        // Convert List to int[]
+        int[] encodedArray = new int[encodedList.size()];
+        for (int i = 0; i < encodedList.size(); i++) {
+            encodedArray[i] = encodedList.get(i);
+        }
+
+        return encodedArray;
     }
 
-    private byte[] huffmanEncode (final int[] runLengthed) {
-        return null;
+    private byte[] huffmanEncode (final int[] sequence) {
+
+        return new H261Huffman().getEncodedData(sequence);
     }
 
 
@@ -218,9 +339,9 @@ public class H261Encoder {
         );
     }
 
-    private BufferedImage loadImage (String imagePath) throws IOException {
+    private BufferedImage loadImage () throws IOException {
 
-        return ImageIO.read(new File(imagePath));
+        return this.frameGenerator.generateFrame();
     }
 
     private int[][][] rgbToYCbCr (BufferedImage image) {
