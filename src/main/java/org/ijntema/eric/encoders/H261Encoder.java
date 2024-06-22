@@ -17,9 +17,9 @@ public class H261Encoder {
     private SpaceInvaderAnimation frameGenerator = new SpaceInvaderAnimation();
     private boolean               iFrameOnlyMode = true;
 
-    private static final int I_FRAME_INTERVAL = 24;
-
-    private static final int[][] ZIGZAG_ORDER = {
+    private static final int     I_FRAME_INTERVAL           = 24;
+    private static final int     FRAMES_PER_SECOND          = 20;
+    private static final int[][] ZIGZAG_ORDER               = {
             {0, 1, 5, 6, 14, 15, 27, 28},
             {2, 4, 7, 13, 16, 26, 29, 42},
             {3, 8, 12, 17, 25, 30, 41, 43},
@@ -29,7 +29,6 @@ public class H261Encoder {
             {21, 34, 37, 47, 50, 56, 59, 61},
             {35, 36, 48, 49, 57, 58, 62, 63}
     };
-
     private static final int[][] I_FRAME_QUANTIZATION_TABLE = {
             {8, 16, 19, 22, 26, 27, 29, 34},
             {16, 16, 22, 24, 27, 29, 34, 37},
@@ -76,7 +75,7 @@ public class H261Encoder {
 
                 Picture picture = createPicture(frameType);
 
-                Thread.sleep(1000 / 20);
+                Thread.sleep(1000 / FRAMES_PER_SECOND);
             } catch (InterruptedException e) {
 
                 e.printStackTrace();
@@ -248,7 +247,7 @@ public class H261Encoder {
                 {0, 1, 5, 6, 14, 15, 27, 28},
                 {2, 4, 7, 13, 16, 26, 29, 42},
                 {3, 8, 12, 17, 25, 30, 41, 43},
-                {9, 11, 18, I_FRAME_INTERVAL, 31, 40, 44, 53},
+                {9, 11, 18, 24, 31, 40, 44, 53},
                 {10, 19, 23, 32, 39, 45, 52, 54},
                 {20, 22, 33, 38, 46, 51, 55, 60},
                 {21, 34, 37, 47, 50, 56, 59, 61},
