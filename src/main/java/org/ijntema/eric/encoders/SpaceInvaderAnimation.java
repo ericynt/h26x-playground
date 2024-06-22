@@ -1,4 +1,4 @@
-package org.ijntema.eric.encoders.frames;
+package org.ijntema.eric.encoders;
 
 import javax.swing.*;
 import java.awt.*;

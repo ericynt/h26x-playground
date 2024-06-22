@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javafx.util.Pair;
-import org.ijntema.eric.encoders.frames.SpaceInvaderAnimation;
 import org.ijntema.eric.model.frame.FrameType;
 import org.ijntema.eric.model.frame.Picture;
 import org.ijntema.eric.model.frame.gob.GOB;
