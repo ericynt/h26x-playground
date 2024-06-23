@@ -1,4 +1,4 @@
-package org.ijntema.eric.model.frame;
+package org.ijntema.eric.model;
 
 public enum FrameType {
 

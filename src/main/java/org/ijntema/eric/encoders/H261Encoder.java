@@ -6,10 +6,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javafx.util.Pair;
-import org.ijntema.eric.model.frame.FrameType;
-import org.ijntema.eric.model.frame.Picture;
-import org.ijntema.eric.model.frame.gob.GOB;
-import org.ijntema.eric.model.frame.gob.macroblock.Macroblock;
+import org.ijntema.eric.model.Block;
+import org.ijntema.eric.model.FrameType;
+import org.ijntema.eric.model.Picture;
+import org.ijntema.eric.model.GOB;
+import org.ijntema.eric.model.Macroblock;
 
 public class H261Encoder {
 
@@ -73,7 +74,9 @@ public class H261Encoder {
 
             try {
 
-                Picture picture = createPicture(frameType);
+                byte[] h261Packet = createPicture(frameType).toByteArray();
+
+                // Send the packet
 
                 Thread.sleep(1000 / FRAMES_PER_SECOND);
             } catch (InterruptedException e) {
@@ -135,26 +138,26 @@ public class H261Encoder {
             for (int j = pixelRowAndColumn.getValue(); j < pixelRowAndColumn.getValue() + 16; j++) {
 
                 // Y
-                int[][][] blocks = macroblock.getBlocks();
+                Block[] blocks = macroblock.getBlocks();
                 if (i < 8 && j < 8) {
 
-                    blocks[0][i][j] = yCbCr[i][j][0];
+                    blocks[0].getPixels()[i][j] = yCbCr[i][j][0];
                 } else if (i < 8) {
 
-                    blocks[1][i][j - 8] = yCbCr[i][j][0];
+                    blocks[1].getPixels()[i][j - 8] = yCbCr[i][j][0];
                 } else if (j < 8) {
 
-                    blocks[2][i - 8][j] = yCbCr[i][j][0];
+                    blocks[2].getPixels()[i - 8][j] = yCbCr[i][j][0];
                 } else {
 
-                    blocks[3][i - 8][j - 8] = yCbCr[i][j][0];
+                    blocks[3].getPixels()[i - 8][j - 8] = yCbCr[i][j][0];
                 }
 
                 // CbCr
                 if (i % 2 == 0 && j % 2 == 0) {
 
-                    blocks[4][i / 2][j / 2] = yCbCr[i][j][1];
-                    blocks[5][i / 2][j / 2] = yCbCr[i][j][2];
+                    blocks[4].getPixels()[i / 2][j / 2] = yCbCr[i][j][1];
+                    blocks[5].getPixels()[i / 2][j / 2] = yCbCr[i][j][2];
                 }
             }
         }
@@ -170,8 +173,8 @@ public class H261Encoder {
 
         for (int i = 0; i < Macroblock.TOTAL_BLOCKS; i++) {
 
-            int[][] block = macroblock.getBlocks()[i];
-            double[][] dctBlock = dctTransform(block);
+            Block block = macroblock.getBlocks()[i];
+            double[][] dctBlock = dctTransform(block.getPixels());
             int[][] quantizedBlock = quantize(dctBlock);
             int[] zigzagOrderSequence = zigzagOrderSequence(quantizedBlock);
             int[] runLengthedSequence = runLength(zigzagOrderSequence);
@@ -179,9 +182,9 @@ public class H261Encoder {
         }
     }
 
-    public double[][] dctTransform (int[][] block) {
+    public double[][] dctTransform (int[][] matrix) {
 
-        int n = Macroblock.BLOCK_SIZE, m = Macroblock.BLOCK_SIZE;
+        int n = Block.BLOCK_SIZE, m = Block.BLOCK_SIZE;
         double pi = 3.142857;
 
         int i, j, k, l;
@@ -212,7 +215,7 @@ public class H261Encoder {
                 sum = 0;
                 for (k = 0; k < m; k++) {
                     for (l = 0; l < n; l++) {
-                        dct = block[k][l] *
+                        dct = matrix[k][l] *
                                 Math.cos((2 * k + 1) * i * pi / (2 * m)) *
                                 Math.cos((2 * l + 1) * j * pi / (2 * n));
                         sum = sum + dct;
@@ -225,29 +228,29 @@ public class H261Encoder {
         return dctBlock;
     }
 
-    public int[][] quantize (double[][] block) {
+    public int[][] quantize (double[][] matrix) {
 
-        int[][] quantizedBlocks = new int[Macroblock.BLOCK_SIZE][Macroblock.BLOCK_SIZE];
-        for (int i = 0; i < Macroblock.BLOCK_SIZE; i++) {
+        int[][] quantizedBlocks = new int[Block.BLOCK_SIZE][Block.BLOCK_SIZE];
+        for (int i = 0; i < Block.BLOCK_SIZE; i++) {
 
-            for (int j = 0; j < Macroblock.BLOCK_SIZE; j++) {
+            for (int j = 0; j < Block.BLOCK_SIZE; j++) {
 
                 quantizedBlocks[i][j] =
-                        (int) Math.round(block[i][j] / P_FRAME_QUANTIZATION_TABLE[i][j]);
+                        (int) Math.round(matrix[i][j] / P_FRAME_QUANTIZATION_TABLE[i][j]);
             }
         }
 
         return quantizedBlocks;
     }
 
-    public int[] zigzagOrderSequence (int[][] block) {
+    public int[] zigzagOrderSequence (int[][] matrix) {
 
         int[] zigzag = new int[64];
         for (int i = 0; i < 8; i++) {
 
             for (int j = 0; j < 8; j++) {
 
-                zigzag[ZIGZAG_ORDER[i][j]] = block[i][j];
+                zigzag[ZIGZAG_ORDER[i][j]] = matrix[i][j];
             }
         }
 
@@ -299,8 +302,8 @@ public class H261Encoder {
 
             for (int i = 0; i < Macroblock.TOTAL_BLOCKS; i++) {
 
-                int[][] block = macroblock.getBlocks()[i];
-                int[][] previousBlock = previousMacroblock.getBlocks()[i];
+                int[][] block = macroblock.getBlocks()[i].getPixels();
+                int[][] previousBlock = previousMacroblock.getBlocks()[i].getPixels();
                 for (int j = 0; j < block.length; j++) {
 
                     for (int k = 0; k < block[j].length; k++) {
