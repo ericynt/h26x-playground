@@ -1,6 +1,7 @@
 package org.ijntema.eric.model;
 
-import java.nio.ByteBuffer;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 import lombok.Data;
 
@@ -25,20 +26,25 @@ public class Picture implements ByteArrayable {
     }
 
     @Override
-    public byte[] toByteArray () {
+    public byte[] toByteArray () throws IOException {
 
-        ByteBuffer buffer = ByteBuffer.allocate(1024);  // Adjust size as needed
-        buffer.putInt(PSC << 12 | temporalReference << 7 | ptype);  // Assemble the header
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        // Assemble the header
+        int header = PSC << 12 | temporalReference << 7 | ptype;
+        baos.write((header >> 16) & 0xFF);
+        baos.write((header >> 8) & 0xFF);
+        baos.write(header & 0xFF);
 
         for (int i = 0; i < GOB_ROWS; i++) {
 
             for (int j = 0; j < GOB_COLUMNS; j++) {
 
                 GOB gob = gobs[i][j];
-                buffer.put(gob.toByteArray());
+                baos.write(gob.toByteArray());
             }
         }
 
-        return buffer.array();
+        return baos.toByteArray();
     }
 }

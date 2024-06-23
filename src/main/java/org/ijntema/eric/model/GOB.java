@@ -1,6 +1,7 @@
 package org.ijntema.eric.model;
 
-import java.nio.ByteBuffer;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 import lombok.Data;
 
@@ -22,21 +23,22 @@ public class GOB implements ByteArrayable {
     }
 
     @Override
-    public byte[] toByteArray () {
+    public byte[] toByteArray () throws IOException {
 
-        ByteBuffer buffer = ByteBuffer.allocate(512);  // Adjust size as needed
-        buffer.putShort((short) GBSC);
-        buffer.put((byte) (groupNumber << 4 | gquant));
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        baos.write((GBSC >> 8) & 0xFF);
+        baos.write(GBSC & 0xFF);
+        baos.write((groupNumber << 4 | gquant) & 0xFF);
 
         for (int i = 0; i < MACROBLOCK_ROWS; i++) {
 
             for (int j = 0; j < MACROBLOCK_COLUMNS; j++) {
 
                 Macroblock macroblock = macroblocks[i][j];
-                buffer.put(macroblock.toByteArray());
+                baos.write(macroblock.toByteArray());
             }
         }
 
-        return buffer.array();
+        return baos.toByteArray();
     }
 }

@@ -1,5 +1,7 @@
 package org.ijntema.eric.model;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import lombok.Data;
@@ -27,17 +29,17 @@ public class Macroblock implements ByteArrayable {
     }
 
     @Override
-    public byte[] toByteArray () {
+    public byte[] toByteArray() throws IOException {
 
-        ByteBuffer buffer = ByteBuffer.allocate(256);  // Adjust size as needed
-        buffer.put((byte) address);
-        buffer.put((byte) type);
-        buffer.put((byte) quant);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        baos.write(address);
+        baos.write(type);
+        baos.write(quant);
 
         for (Block block : blocks) {
-            buffer.put(block.toByteArray());
+            baos.write(block.toByteArray());
         }
 
-        return buffer.array();
+        return baos.toByteArray();
     }
 }
