@@ -26,6 +26,11 @@
 - serve the data in a loop
 - log network debug information
 
+# Nice to haves
+- print bitrate in every frame
+- print compression ratio in every frame
+- print network debug information in every frame
+
 # Future
 - Look into RTCP and RTSP
 - Look into MPEG-TS
