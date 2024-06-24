@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javafx.util.Pair;
+import org.ijntema.eric.encoders.utils.ByteUtil;
 import org.ijntema.eric.model.Block;
 import org.ijntema.eric.model.FrameType;
 import org.ijntema.eric.model.Picture;
@@ -78,8 +79,9 @@ public class H261Encoder {
             }
 
             try {
-
-                byte[] h261Packet = createPicture(frameType).toByteArray();
+                byte[] h261Header = createH261Header(0, 0, true, false, 0, 1, 0, 0, 0);
+                byte[] h261Stream = createPicture(frameType).toByteArray();
+                byte[] h261Packet = ByteUtil.concatenateByteArrays(h261Header, h261Stream);
 
                 // Send the packet
 
