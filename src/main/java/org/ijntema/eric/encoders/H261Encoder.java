@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javafx.util.Pair;
-import org.ijntema.eric.encoders.utils.ByteUtil;
+import org.ijntema.eric.utils.ByteUtil;
 import org.ijntema.eric.model.Block;
 import org.ijntema.eric.model.FrameType;
 import org.ijntema.eric.model.Picture;

@@ -1,4 +1,4 @@
-package org.ijntema.eric.encoders.utils;
+package org.ijntema.eric.utils;
 
 public class ByteUtil {
 
