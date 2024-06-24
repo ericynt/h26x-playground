@@ -361,8 +361,17 @@ public class H261Encoder {
     }
 
     // Method to create a byte array for the H.261 header
-    public static byte[] createH261Header (int sbit, int ebit, boolean intra, boolean mvFlag,
-            int gobn, int mbap, int quant, int hmvd, int vmvd) {
+    public static byte[] createH261Header (
+            int sbit,
+            int ebit,
+            boolean intra,
+            boolean mvFlag,
+            int gobn,
+            int mbap,
+            int quant,
+            int hmvd,
+            int vmvd
+    ) {
         byte[] header = new byte[4];
 
         // Byte 0: SBIT (3 bits), EBIT (3 bits), INTRA (1 bit), MV flag (1 bit)
