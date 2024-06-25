@@ -53,6 +53,12 @@ public class H261Encoder {
             {23, 24, 25, 27, 28, 30, 31, 33}
     };
 
+    public static void main (String[] args) throws IOException {
+
+        H261Encoder h261Encoder = new H261Encoder(false);
+        h261Encoder.encode();
+    }
+
     public H261Encoder (final boolean mode) {
 
         this.iFrameOnlyMode = mode;
@@ -79,7 +85,7 @@ public class H261Encoder {
             }
 
             try {
-                byte[] h261Header = createH261Header(0, 0, true, false, 0, 1, 0, 0, 0);
+                byte[] h261Header = createH261Header(0, 0, iFrameOnlyMode, false, 0, 1, 0, 0, 0);
                 byte[] h261Stream = createPicture(frameType).toByteArray();
                 byte[] h261Packet = ByteUtil.concatenateByteArrays(h261Header, h261Stream);
 
