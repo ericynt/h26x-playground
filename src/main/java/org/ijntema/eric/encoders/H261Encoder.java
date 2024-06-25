@@ -6,18 +6,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javafx.util.Pair;
-import org.ijntema.eric.utils.ByteUtil;
 import org.ijntema.eric.model.Block;
 import org.ijntema.eric.model.FrameType;
-import org.ijntema.eric.model.Picture;
 import org.ijntema.eric.model.GOB;
 import org.ijntema.eric.model.Macroblock;
+import org.ijntema.eric.model.Picture;
+import org.ijntema.eric.utils.ByteUtil;
 
 public class H261Encoder {
 
-    private       Picture               previousPicture;
     private final SpaceInvaderAnimation frameGenerator = new SpaceInvaderAnimation();
     private       boolean               iFrameOnlyMode = true;
+    private       int[][][]             previousyCbCrMatrix;
 
     private static final int     I_FRAME_INTERVAL           = 24;
     private static final int     FRAMES_PER_SECOND          = 20;
@@ -106,6 +106,7 @@ public class H261Encoder {
         Picture picture = new Picture();
         picture.setFrameType(frametype);
         BufferedImage bufferedImage = loadImage();
+        int[][][] yCbCrMatrix = rgbToYCbCr(bufferedImage);
 
         for (int i = 0; i < Picture.GOB_ROWS; i++) {
 
@@ -116,18 +117,22 @@ public class H261Encoder {
 
                     for (int l = 0; l < GOB.MACROBLOCK_COLUMNS; l++) {
 
-                        picture.getGobs()[i][j].getMacroblocks()[k][l] = new Macroblock();
+                        // Set constructor params.
                         Macroblock macroblock = picture.getGobs()[i][j].getMacroblocks()[k][l];
-                        Macroblock previousMacroblock = this.previousPicture == null ? null : this.previousPicture.getGobs()[i][j].getMacroblocks()[k][l];
+                        picture.getGobs()[i][j].getMacroblocks()[k][l] = new Macroblock();
 
-                        preprocessing(
+                        int[][][] blocks = preprocessing(
                                 getMarcroblockStartRowAndColumn(i, j, k, l),
-                                macroblock,
-                                rgbToYCbCr(bufferedImage)
+                                yCbCrMatrix
+                        );
+                        int[][][] previousBlocks = preprocessing(
+                                getMarcroblockStartRowAndColumn(i, j, k, l),
+                                this.previousyCbCrMatrix
                         );
                         encodeMacroblock(
+                                blocks,
+                                previousBlocks,
                                 macroblock,
-                                previousMacroblock,
                                 picture.getFrameType()
                         );
                     }
@@ -135,64 +140,70 @@ public class H261Encoder {
             }
         }
 
-        this.previousPicture = picture;
+        this.previousyCbCrMatrix = yCbCrMatrix;
 
         return picture;
     }
 
-    private void preprocessing (
+    private int[][][] preprocessing (
             final Pair<Integer, Integer> pixelRowAndColumn,
-            final Macroblock macroblock,
             final int[][][] yCbCr
     ) {
+
+        int[][][] blocks = new int[Macroblock.TOTAL_BLOCKS][Block.BLOCK_SIZE][Block.BLOCK_SIZE];
 
         for (int i = pixelRowAndColumn.getKey(); i < pixelRowAndColumn.getKey() + 16; i++) {
 
             for (int j = pixelRowAndColumn.getValue(); j < pixelRowAndColumn.getValue() + 16; j++) {
 
                 // Y
-                Block[] blocks = macroblock.getBlocks();
                 if (i < 8 && j < 8) {
 
-                    blocks[0].getPixels()[i][j] = yCbCr[i][j][0];
+                    blocks[0][i][j] = yCbCr[i][j][0];
                 } else if (i < 8) {
 
-                    blocks[1].getPixels()[i][j - 8] = yCbCr[i][j][0];
+                    blocks[1][i][j - 8] = yCbCr[i][j][0];
                 } else if (j < 8) {
 
-                    blocks[2].getPixels()[i - 8][j] = yCbCr[i][j][0];
+                    blocks[2][i - 8][j] = yCbCr[i][j][0];
                 } else {
 
-                    blocks[3].getPixels()[i - 8][j - 8] = yCbCr[i][j][0];
+                    blocks[3][i - 8][j - 8] = yCbCr[i][j][0];
                 }
 
                 // CbCr
                 if (i % 2 == 0 && j % 2 == 0) {
 
-                    blocks[4].getPixels()[i / 2][j / 2] = yCbCr[i][j][1];
-                    blocks[5].getPixels()[i / 2][j / 2] = yCbCr[i][j][2];
+                    blocks[4][i / 2][j / 2] = yCbCr[i][j][1];
+                    blocks[5][i / 2][j / 2] = yCbCr[i][j][2];
                 }
             }
         }
+
+        return blocks;
     }
 
     private void encodeMacroblock (
+            int[][][] blocks,
+            int[][][] previousMacroblockBlocks,
             Macroblock macroblock,
-            Macroblock previousMacroblock,
             FrameType frameType
     ) {
 
-        calculateIFrameDiff(macroblock, previousMacroblock, frameType);
+        if (frameType == FrameType.P_FRAME) {
+
+            blocks = calculateIFrameDiff(blocks, previousMacroblockBlocks, macroblock);
+        }
 
         for (int i = 0; i < Macroblock.TOTAL_BLOCKS; i++) {
 
-            Block block = macroblock.getBlocks()[i];
-            double[][] dctBlock = dctTransform(block.getPixels());
+            int[][] block = blocks[i];
+            double[][] dctBlock = dctTransform(block);
             int[][] quantizedBlock = quantize(dctBlock);
             int[] zigzagOrderSequence = zigzagOrderSequence(quantizedBlock);
             int[] runLengthedSequence = runLength(zigzagOrderSequence);
             byte[] huffmanEncoded = huffmanEncode(runLengthedSequence);
-            block.setCoefficient(huffmanEncoded);
+            macroblock.getBlocks()[i].setCoefficient(huffmanEncoded);
         }
     }
 
@@ -309,26 +320,28 @@ public class H261Encoder {
     }
 
 
-    private static void calculateIFrameDiff (final Macroblock macroblock, final Macroblock previousMacroblock, final FrameType frameType) {
+    private static int[][][] calculateIFrameDiff (
+            final int[][][] blocks,
+            final int[][][] previousBlocks,
+            final Macroblock macroblock
+            ) {
 
         // Calculate diff. if it's a P-frame
-        if (frameType == FrameType.I_FRAME) {
+        for (int i = 0; i < Macroblock.TOTAL_BLOCKS; i++) {
 
-            for (int i = 0; i < Macroblock.TOTAL_BLOCKS; i++) {
+            int[][] block = blocks[i];
+            int[][] previousBlock = previousBlocks[i];
+            for (int j = 0; j < block.length; j++) {
 
-                int[][] block = macroblock.getBlocks()[i].getPixels();
-                int[][] previousBlock = previousMacroblock.getBlocks()[i].getPixels();
-                for (int j = 0; j < block.length; j++) {
+                for (int k = 0; k < block[j].length; k++) {
 
-                    for (int k = 0; k < block[j].length; k++) {
-
-
-                        block[j][k] -= previousBlock[j][k];
-                        macroblock.setDifferent(block[j][k] != 0);
-                    }
+                    block[j][k] -= previousBlock[j][k];
+                    macroblock.setDifferent(macroblock.isDifferent() || block[j][k] != 0);
                 }
             }
         }
+
+        return blocks;
     }
 
     private Pair<Integer, Integer> getMarcroblockStartRowAndColumn (

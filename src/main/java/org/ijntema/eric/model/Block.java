@@ -9,8 +9,6 @@ public class Block implements ByteArrayable {
 
     public static final int BLOCK_SIZE = 8;
 
-    private int[][] pixels;
-
     @Override
     public byte[] toByteArray () {
 
