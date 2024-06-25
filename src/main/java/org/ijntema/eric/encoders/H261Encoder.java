@@ -203,7 +203,7 @@ public class H261Encoder {
             int[] zigzagOrderSequence = zigzagOrderSequence(quantizedBlock);
             int[] runLengthedSequence = runLength(zigzagOrderSequence);
             byte[] huffmanEncoded = huffmanEncode(runLengthedSequence);
-            macroblock.getBlocks()[i].setCoefficient(huffmanEncoded);
+            macroblock.getBlocks()[i].setCoefficients(huffmanEncoded);
         }
     }
 
