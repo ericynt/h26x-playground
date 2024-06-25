@@ -198,16 +198,16 @@ public class H261Encoder {
         for (int i = 0; i < Macroblock.TOTAL_BLOCKS; i++) {
 
             int[][] block = blocks[i];
-            double[][] dctBlock = dctTransform(block);
+            double[][] dctBlock = dct(block);
             int[][] quantizedBlock = quantize(dctBlock);
-            int[] zigzagOrderSequence = zigzagOrderSequence(quantizedBlock);
+            int[] zigzagOrderSequence = zigzag(quantizedBlock);
             int[] runLengthedSequence = runLength(zigzagOrderSequence);
-            byte[] huffmanEncoded = huffmanEncode(runLengthedSequence);
+            byte[] huffmanEncoded = huffman(runLengthedSequence);
             macroblock.getBlocks()[i].setCoefficients(huffmanEncoded);
         }
     }
 
-    public double[][] dctTransform (int[][] matrix) {
+    public double[][] dct (int[][] matrix) {
 
         int n = Block.BLOCK_SIZE, m = Block.BLOCK_SIZE;
         double pi = 3.142857;
@@ -268,7 +268,7 @@ public class H261Encoder {
         return quantizedBlocks;
     }
 
-    public int[] zigzagOrderSequence (int[][] matrix) {
+    public int[] zigzag (int[][] matrix) {
 
         int[] zigzag = new int[64];
         for (int i = 0; i < 8; i++) {
@@ -314,7 +314,7 @@ public class H261Encoder {
         return encodedArray;
     }
 
-    private byte[] huffmanEncode (final int[] sequence) {
+    private byte[] huffman (final int[] sequence) {
 
         return new H261Huffman().getEncodedData(sequence);
     }
