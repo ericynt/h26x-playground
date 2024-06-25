@@ -121,11 +121,11 @@ public class H261Encoder {
                         Macroblock macroblock = picture.getGobs()[i][j].getMacroblocks()[k][l];
                         picture.getGobs()[i][j].getMacroblocks()[k][l] = new Macroblock();
                         Pair<Integer, Integer> marcroblockStartRowAndColumn = getMarcroblockStartRowAndColumn(i, j, k, l);
-                        int[][][] blocks = createBlocksFromYCbCrMatrix(
+                        int[][][] blocks = toBlocks(
                                 marcroblockStartRowAndColumn,
                                 yCbCrMatrix
                         );
-                        int[][][] previousBlocks = createBlocksFromYCbCrMatrix(
+                        int[][][] previousBlocks = toBlocks(
                                 marcroblockStartRowAndColumn,
                                 this.previousyCbCrMatrix
                         );
@@ -145,7 +145,7 @@ public class H261Encoder {
         return picture;
     }
 
-    private int[][][] createBlocksFromYCbCrMatrix (
+    private int[][][] toBlocks (
             final Pair<Integer, Integer> pixelRowAndColumn,
             final int[][][] yCbCr
     ) {
