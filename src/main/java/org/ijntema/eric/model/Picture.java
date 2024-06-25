@@ -25,6 +25,14 @@ public class Picture implements ByteArrayable {
         this.gobs = new GOB[GOB_ROWS][GOB_COLUMNS];
     }
 
+    public Picture (int temporalReference, int ptype, FrameType frameType) {
+
+        this.temporalReference = temporalReference;
+        this.ptype = ptype;
+        this.frameType = frameType;
+        this.gobs = new GOB[GOB_ROWS][GOB_COLUMNS];
+    }
+
     @Override
     public byte[] toByteArray () throws IOException {
 

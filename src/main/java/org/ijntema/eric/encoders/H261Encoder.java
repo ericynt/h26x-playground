@@ -186,6 +186,7 @@ public class H261Encoder {
             int[] zigzagOrderSequence = zigzagOrderSequence(quantizedBlock);
             int[] runLengthedSequence = runLength(zigzagOrderSequence);
             byte[] huffmanEncoded = huffmanEncode(runLengthedSequence);
+            block.setCoefficients(huffmanEncoded);
         }
     }
 

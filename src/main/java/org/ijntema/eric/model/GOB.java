@@ -22,6 +22,13 @@ public class GOB implements ByteArrayable {
         this.macroblocks = new Macroblock[MACROBLOCK_ROWS][MACROBLOCK_COLUMNS];
     }
 
+    public GOB (int groupNumber, int gquant) {
+
+        this.groupNumber = groupNumber;
+        this.gquant = gquant;
+        this.macroblocks = new Macroblock[MACROBLOCK_ROWS][MACROBLOCK_COLUMNS];
+    }
+
     @Override
     public byte[] toByteArray () throws IOException {
 

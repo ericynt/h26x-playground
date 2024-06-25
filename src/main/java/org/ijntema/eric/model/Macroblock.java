@@ -28,6 +28,14 @@ public class Macroblock implements ByteArrayable {
         this.blocks = new Block[TOTAL_BLOCKS];
     }
 
+    public Macroblock (int address, int type, int quant) {
+
+        this.address = address;
+        this.type = type;
+        this.quant = quant;
+        this.blocks = new Block[TOTAL_BLOCKS];
+    }
+
     @Override
     public byte[] toByteArray() throws IOException {
 

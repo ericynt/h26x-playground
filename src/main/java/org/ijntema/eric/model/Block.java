@@ -14,6 +14,6 @@ public class Block implements ByteArrayable {
     @Override
     public byte[] toByteArray () {
 
-        return new byte[0];
+        return coefficients;
     }
 }
