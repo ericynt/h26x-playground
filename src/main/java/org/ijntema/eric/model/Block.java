@@ -5,7 +5,7 @@ import lombok.Data;
 @Data
 public class Block implements ByteArrayable {
 
-    private byte[] coefficients;  // Transform coefficients (variable length)
+    private byte[] coefficient;  // Transform coefficients (variable length)
 
     public static final int BLOCK_SIZE = 8;
 
@@ -14,6 +14,6 @@ public class Block implements ByteArrayable {
     @Override
     public byte[] toByteArray () {
 
-        return coefficients;
+        return coefficient;
     }
 }
