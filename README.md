@@ -1,8 +1,7 @@
 # Steps
-- load JPEGs from directory
+- generate RGB 352 x 288 frames
 - apply H.261 compression algorithm
     - preprocessing
-      - adjust resolution to 352 x 288, if needed
       - map JPEGs into two dimensional YCbCr 4:2:0 pixel arrays
       - divide pixel arrays into Groups Of Block (GOB's)
       - divide GOB's into Macro Blocks (MB's)
@@ -17,7 +16,7 @@
       - run length encoding
       - huffman encoding
 - serving data
-  - put H.261 compressed data bytes into H.261 packets
+  - put H.261 block coefficients into H.261 packets
   - put H.261 packets into RTP packets
   - serve RTP packets in UDP datagrams
 
