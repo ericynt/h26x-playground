@@ -47,18 +47,19 @@ public class H261Encoder {
 
     public void encode () throws IOException {
 
-        int count = 0;
+        int iFramecount = 0;
+        int temporalReferenceCount = 0;
 
         while (true) {
 
             FrameType frameType;
-            if (!this.iFrameOnlyMode && count % I_FRAME_INTERVAL == 0) {
+            if (!this.iFrameOnlyMode && iFramecount % I_FRAME_INTERVAL == 0) {
 
                 frameType = FrameType.P_FRAME;
 
-                if (count != 0) {
+                if (iFramecount != 0) {
 
-                    count = 0;
+                    iFramecount = 0;
                 }
             } else {
 
@@ -78,7 +79,15 @@ public class H261Encoder {
                                 0,
                                 0
                         );
-                byte[] h261Stream = createPicture(frameType).toByteArray();
+
+                if (temporalReferenceCount == 32) {
+
+                    temporalReferenceCount = 0;
+                }
+
+                int temporalReference = 0;
+                int ptype = 0b0010_1000; // 4th bit CIF and 6th bit Spare
+                byte[] h261Stream = createPicture(temporalReference, ptype, frameType).toByteArray();
                 byte[] h261Packet = ByteUtil.concatenateByteArrays(h261Header, h261Stream);
 
                 // Send the packet
@@ -89,14 +98,14 @@ public class H261Encoder {
                 e.printStackTrace();
             }
 
-            count++;
+            iFramecount++;
+            temporalReferenceCount++;
         }
     }
 
-    private Picture createPicture (FrameType frametype) throws IOException {
+    private Picture createPicture (int temporalReference, int ptype, FrameType frametype) throws IOException {
 
-        Picture picture = new Picture();
-        picture.setFrameType(frametype);
+        Picture picture = new Picture(temporalReference, ptype, frametype);
         BufferedImage bufferedImage = loadImage();
         int[][][] yCbCrMatrix = rgbToYCbCr(bufferedImage);
 
@@ -104,7 +113,7 @@ public class H261Encoder {
 
             for (int j = 0; j < Picture.GOB_COLUMNS; j++) {
 
-                picture.getGobs()[i][j] = new GOB();
+                picture.getGobs()[i][j] = new GOB(i + 1, 0);
                 for (int k = 0; k < GOB.MACROBLOCK_ROWS; k++) {
 
                     for (int l = 0; l < GOB.MACROBLOCK_COLUMNS; l++) {

@@ -5,10 +5,11 @@ import java.io.IOException;
 
 import lombok.Data;
 
+import static org.ijntema.eric.utils.ByteUtil.intToBinaryString;
+
 @Data
 public class Picture implements ByteArrayable {
 
-    private static final int PSC = 0x000100;  // Picture Start Code (20 bits)
     private              int temporalReference;  // Temporal reference (5 bits)
     private              int ptype;  // Type information (6 bits)
 
@@ -38,11 +39,8 @@ public class Picture implements ByteArrayable {
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-        // Assemble the header
-        int header = PSC << 12 | temporalReference << 7 | ptype;
-        baos.write((header >> 16) & 0xFF);
-        baos.write((header >> 8) & 0xFF);
-        baos.write(header & 0xFF);
+        // Write the header
+        baos.write(createHeader());
 
         for (int i = 0; i < GOB_ROWS; i++) {
 
@@ -54,5 +52,31 @@ public class Picture implements ByteArrayable {
         }
 
         return baos.toByteArray();
+    }
+
+    private byte[] createHeader () {
+
+        byte[] header = new byte[4];
+        header[0] = 0b0000_0000; // 8 bit start code part
+        header[1] = 0b0000_0001; // 8 bit start code part
+        header[2] = (byte) (temporalReference >> 1); // 4 bit start code part + 4 bit temporal reference part
+        header[3] = (byte) (temporalReference << 7 | ptype << 1); // 1 bit temporal reference part + 6 bit ptype + 1 bit Extra insertion information
+
+        return header;
+    }
+
+    @Override
+    public String toString () {
+
+        byte[] header = createHeader();
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Picture Header:\n");
+        for (byte b : header) {
+            sb.append(intToBinaryString(b, 4));
+            sb.append(" ");
+        }
+
+        return sb.toString();
     }
 }
