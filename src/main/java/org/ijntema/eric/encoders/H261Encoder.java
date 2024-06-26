@@ -66,7 +66,7 @@ public class H261Encoder {
             }
 
             try {
-                byte[] h261Header = H261Util.createH261Header(0, 0, iFrameOnlyMode, false, 0, 1, 0, 0, 0);
+                byte[] h261Header = H261Util.createH261Header(0, 0, iFrameOnlyMode, this.iFrameOnlyMode, 0, 1, 0, 0, 0);
                 byte[] h261Stream = createPicture(frameType).toByteArray();
                 byte[] h261Packet = ByteUtil.concatenateByteArrays(h261Header, h261Stream);
 
