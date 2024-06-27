@@ -99,7 +99,6 @@ public class H261Encoder {
         this.baosSecond = new ByteArrayOutputStream();
         this.bebaosFirst = new BigEndianBitOutputStream(this.baosFirst);
         this.bebaosSecond = new BigEndianBitOutputStream(this.baosSecond);
-
     }
 
     public static void main (String[] args) throws IOException {
