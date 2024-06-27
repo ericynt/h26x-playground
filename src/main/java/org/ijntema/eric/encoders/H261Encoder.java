@@ -375,44 +375,37 @@ public class H261Encoder {
 
     private int[] runLength (final int[] sequence) {
 
-        // List to store RLE encoded values
-        List<Integer> encodedList = new ArrayList<>();
-        int count = 1;
+        List<Integer> encoded = new ArrayList<>();
+        int run = 0;
 
-        int previous = sequence[0];
+        for (int value : sequence) {
 
-        for (int i = 1; i < sequence.length; i++) {
-            int current = sequence[i];
-            if (current == previous) {
-                count++;
+            if (value == 0) {
+
+                run++;
             } else {
-                encodedList.add(count);
-                encodedList.add(previous);
-                previous = current;
-                count = 1;
+
+                encoded.add(run);
+                encoded.add(value);
+                run = 0; // Reset the run count after a non-zero value
             }
         }
-        // Append the last run
-        encodedList.add(count);
-        encodedList.add(previous);
 
-        // Convert List to int[]
-        int[] encodedArray = new int[encodedList.size()];
-        for (int i = 0; i < encodedList.size(); i++) {
-            encodedArray[i] = encodedList.get(i);
+        int[] result = new int[encoded.size()];
+        for (int i = 0; i < encoded.size(); i++) {
+            result[i] = encoded.get(i);
         }
 
-        return encodedArray;
+        return result;
     }
 
     private void writeHuffman (final int[] sequence) throws IOException {
 
         for (int i = 0; i < sequence.length; i += 2) {
 
-            int run = sequence[i];
-            int level = sequence[i + 1];
-            this.getOutputStream().write(run, 6);
-            this.getOutputStream().write(level, 8);
+            this.getOutputStream().write(0b0000_01, 6); // ESCAPE (6 bits)
+            this.getOutputStream().write(sequence[i], 6); // RUN (6 bits)
+            this.getOutputStream().write(sequence[i + 1], 8); // LEVEL (8 bits)
         }
     }
 
