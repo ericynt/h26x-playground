@@ -16,7 +16,7 @@ import java.io.OutputStream;
  */
 public class BigEndianBitOutputStream extends BitOutputStream {
 
-    private static final int[] MASKS = new int[] {
+    private static final int[] MASKS = new int[]{
             0, 1, 3, 7, 0xf, 0x1f, 0x3f, 0x7f, 0xff
     };
 
@@ -25,18 +25,18 @@ public class BigEndianBitOutputStream extends BitOutputStream {
      *
      * @param out the OutputStream.
      */
-    public BigEndianBitOutputStream(OutputStream out) {
+    public BigEndianBitOutputStream (OutputStream out) {
         super(out);
     }
 
     /**
      * Writes some bits.
      *
-     * @param data          bits to be written, which are stored in low bits.
-     * @param numBits       bits count to be written.
-     * @throws IOException  if an I/O error occurs.
+     * @param data    bits to be written, which are stored in low bits.
+     * @param numBits bits count to be written.
+     * @throws IOException if an I/O error occurs.
      */
-    public void write(int data, int numBits) throws IOException {
+    public void write (int data, int numBits) throws IOException {
         while (numBits > 0) {
             int rest = 8 - bufferBitCount;
 
@@ -52,5 +52,15 @@ public class BigEndianBitOutputStream extends BitOutputStream {
                 buffer = 0;
             }
         }
+    }
+
+    public int getBufferBitCount () {
+
+        return bufferBitCount;
+    }
+
+    public int getBuffer () {
+
+        return buffer;
     }
 }
