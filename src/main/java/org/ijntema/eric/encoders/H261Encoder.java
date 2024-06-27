@@ -16,16 +16,6 @@ public class H261Encoder {
     private final SpaceInvaderAnimation frameGenerator = new SpaceInvaderAnimation();
 
     private static final int                                  FRAMES_PER_SECOND            = 20;
-    private static final int[][]                              ZIGZAG_ORDER                 = {
-            {0, 1, 5, 6, 14, 15, 27, 28},
-            {2, 4, 7, 13, 16, 26, 29, 42},
-            {3, 8, 12, 17, 25, 30, 41, 43},
-            {9, 11, 18, 24, 31, 40, 44, 53},
-            {10, 19, 23, 32, 39, 45, 52, 54},
-            {20, 22, 33, 38, 46, 51, 55, 60},
-            {21, 34, 37, 47, 50, 56, 59, 61},
-            {35, 36, 48, 49, 57, 58, 62, 63}
-    };
     public static final  int                                  PICTURE_WIDTH                = 352;
     public static final  int                                  PICTURE_HEIGHT               = 288;
     private static final int                                  GOB_ROWS                     = 6;
@@ -40,6 +30,16 @@ public class H261Encoder {
     private static final int                                  TOTAL_BLOCKS                 = Y_BLOCKS_AMOUNT + CB_BLOCKS_AMOUNT + CR_BLOCKS_AMOUNT;
     private static final int                                  BLOCK_SIZE                   = 8;
     private static final Map<Integer, Pair<Integer, Integer>> VLC_TABLE_MACROBLOCK_ADDRESS = new HashMap<>();
+    private static final int[][]                              ZIGZAG_ORDER                 = {
+            {0, 1, 5, 6, 14, 15, 27, 28},
+            {2, 4, 7, 13, 16, 26, 29, 42},
+            {3, 8, 12, 17, 25, 30, 41, 43},
+            {9, 11, 18, 24, 31, 40, 44, 53},
+            {10, 19, 23, 32, 39, 45, 52, 54},
+            {20, 22, 33, 38, 46, 51, 55, 60},
+            {21, 34, 37, 47, 50, 56, 59, 61},
+            {35, 36, 48, 49, 57, 58, 62, 63}
+    };
 
     private final BigEndianBitOutputStream bebaosFirst;
     private final BigEndianBitOutputStream bebaosSecond;
