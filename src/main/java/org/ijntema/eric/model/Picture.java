@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import lombok.Data;
+import org.ijntema.eric.bitstream.BigEndianBitOutputStream;
 
 import static org.ijntema.eric.utils.ByteUtil.intToBinaryString;
 
@@ -38,6 +39,7 @@ public class Picture implements ByteArrayable {
     public byte[] toByteArray () throws IOException {
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        BigEndianBitOutputStream bebaos = new BigEndianBitOutputStream(baos);
 
         // Write the header
         baos.write(createHeader());
@@ -60,7 +62,7 @@ public class Picture implements ByteArrayable {
         header[0] = 0b0000_0000; // 8 bit start code part
         header[1] = 0b0000_0001; // 8 bit start code part
         header[2] = (byte) (temporalReference >> 1); // 4 bit start code part + 4 bit temporal reference part
-        header[3] = (byte) (temporalReference << 7 | ptype << 1); // 1 bit temporal reference part + 6 bit ptype + 1 bit Extra insertion information
+        header[3] = (byte) (temporalReference << 7 | ptype << 1); // 1 bit temporal reference part + 6 bit ptype + 1 bit extra insertion information
 
         return header;
     }

@@ -44,7 +44,7 @@ public class H261Huffman {
         // Additional entries should be added based on the document.
     }
 
-    public byte[] getEncodedData(int[] sequence) {
+    public void getEncodedData(int[] sequence) {
 
         StringBuilder encodedBits = new StringBuilder();
 
@@ -83,7 +83,5 @@ public class H261Huffman {
                 encodedData[i / 8] |= 1 << (7 - (i % 8));
             }
         }
-
-        return encodedData;
     }
 }

@@ -1,28 +1,21 @@
 package org.ijntema.eric.encoders;
 
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import javafx.util.Pair;
-import org.ijntema.eric.model.Block;
-import org.ijntema.eric.model.FrameType;
-import org.ijntema.eric.model.GOB;
-import org.ijntema.eric.model.Macroblock;
-import org.ijntema.eric.model.Picture;
-import org.ijntema.eric.utils.ByteUtil;
-import org.ijntema.eric.utils.H261Util;
+import org.ijntema.eric.bitstream.BigEndianBitOutputStream;
 
 public class H261Encoder {
 
     private final SpaceInvaderAnimation frameGenerator = new SpaceInvaderAnimation();
     private       boolean               iFrameOnlyMode = true;
-    private       int[][][]             previousyCbCrMatrix;
 
-    private static final int     I_FRAME_INTERVAL           = 24;
-    private static final int     FRAMES_PER_SECOND          = 20;
-    private static final int[][] ZIGZAG_ORDER               = {
+    private static final int     FRAMES_PER_SECOND  = 20;
+    private static final int[][] ZIGZAG_ORDER       = {
             {0, 1, 5, 6, 14, 15, 27, 28},
             {2, 4, 7, 13, 16, 26, 29, 42},
             {3, 8, 12, 17, 25, 30, 41, 43},
@@ -32,63 +25,52 @@ public class H261Encoder {
             {21, 34, 37, 47, 50, 56, 59, 61},
             {35, 36, 48, 49, 57, 58, 62, 63}
     };
-    private static final double STEP_SIZE = 8.0;
+    public static final  int     PICTURE_WIDTH      = 352;
+    public static final  int     PICTURE_HEIGHT     = 288;
+    private static final int     GOB_ROWS           = 6;
+    private static final int     GOB_COLUMNS        = 2;
+    private static final int     MACROBLOCK_ROWS    = 3;
+    private static final int     MACROBLOCK_COLUMNS = 11;
+    private static final int     Y_BLOCKS_AMOUNT    = 4;
+    private static final int     CB_BLOCKS_AMOUNT   = 1;
+    private static final int     CR_BLOCKS_AMOUNT   = 1;
+    private static final double  STEP_SIZE          = 8.0;
+    // YCbCr 4:2:0
+    private static final int     TOTAL_BLOCKS       = Y_BLOCKS_AMOUNT + CB_BLOCKS_AMOUNT + CR_BLOCKS_AMOUNT;
+    private static final int     BLOCK_SIZE         = 8;
+
+    private BigEndianBitOutputStream bebaos;
+    private ByteArrayOutputStream    baos;
 
     public static void main (String[] args) throws IOException {
 
-        H261Encoder h261Encoder = new H261Encoder(false);
-        h261Encoder.encode();
+        new H261Encoder().encode();
     }
 
-    public H261Encoder (final boolean mode) {
+    public H261Encoder () {
 
-        this.iFrameOnlyMode = mode;
+        this.baos = new ByteArrayOutputStream();
+        this.bebaos = new BigEndianBitOutputStream(this.baos);
     }
 
     public void encode () throws IOException {
 
-        int iFramecount = 0;
         int temporalReferenceCount = 0;
 
         while (true) {
 
-            FrameType frameType;
-            if (!this.iFrameOnlyMode && iFramecount % I_FRAME_INTERVAL == 0) {
-
-                frameType = FrameType.P_FRAME;
-
-                if (iFramecount != 0) {
-
-                    iFramecount = 0;
-                }
-            } else {
-
-                frameType = FrameType.I_FRAME;
-            }
-
             try {
-                byte[] h261Header =
-                        H261Util.createH261Header(
-                                0,
-                                0,
-                                this.iFrameOnlyMode,
-                                false,
-                                0,
-                                1,
-                                0,
-                                0,
-                                0
-                        );
+
+                writeH261Header();
 
                 if (temporalReferenceCount == 32) {
 
                     temporalReferenceCount = 0;
                 }
 
-                int temporalReference = 0;
-                int ptype = 0b0010_1000; // 4th bit CIF and 6th bit Spare
-                byte[] h261Stream = createPicture(temporalReference, ptype, frameType).toByteArray();
-                byte[] h261Packet = ByteUtil.concatenateByteArrays(h261Header, h261Stream);
+//                byte[] h261Stream = writePicture(temporalReference, frameType).toByteArray();
+                writePicture(temporalReferenceCount);
+//                byte[] h261Packet = ByteUtil.concatenateByteArrays(h261Header, h261Stream);
 
                 // Send the packet
 
@@ -98,52 +80,53 @@ public class H261Encoder {
                 e.printStackTrace();
             }
 
-            iFramecount++;
             temporalReferenceCount++;
         }
     }
 
-    private Picture createPicture (int temporalReference, int ptype, FrameType frametype) throws IOException {
+    private void writeH261Header () throws IOException {
 
-        Picture picture = new Picture(temporalReference, ptype, frametype);
-        BufferedImage bufferedImage = loadImage();
-        int[][][] yCbCrMatrix = rgbToYCbCr(bufferedImage);
+        this.bebaos.write(0, 3); // SBIT (3 bits)
+        this.bebaos.write(0, 3); // EBIT (3 bits)
+        this.bebaos.write(this.iFrameOnlyMode ? 1 : 0, 1); // INTRA (1 bit)
+        this.bebaos.write(0, 1); // MV flag (1 bit)
+        this.bebaos.write(0, 4); // GOBN (4 bits)
+        this.bebaos.write(0, 5); // MBAP (5 bits)
+        this.bebaos.write(0, 5); // QUANT (5 bits)
+        this.bebaos.write(0, 2); // HMVD (2 bits)
+        this.bebaos.write(0, 5); // VMVD (5 bits)
+    }
 
-        for (int i = 0; i < Picture.GOB_ROWS; i++) {
+    private void writePicture (int temporalReference) throws IOException {
 
-            for (int j = 0; j < Picture.GOB_COLUMNS; j++) {
+        this.writePictureHeader(temporalReference);
 
-                picture.getGobs()[i][j] = new GOB(i + 1, 0);
-                for (int k = 0; k < GOB.MACROBLOCK_ROWS; k++) {
+        int[][][] yCbCrMatrix = rgbToYCbCr(loadImage());
 
-                    for (int l = 0; l < GOB.MACROBLOCK_COLUMNS; l++) {
+        for (int i = 0; i < GOB_ROWS; i++) {
 
-                        // Set constructor params.
-                        Macroblock macroblock = picture.getGobs()[i][j].getMacroblocks()[k][l];
-                        picture.getGobs()[i][j].getMacroblocks()[k][l] = new Macroblock();
+            for (int j = 0; j < GOB_COLUMNS; j++) {
+
+                this.writeGobHeader(i, j);
+                for (int k = 0; k < MACROBLOCK_ROWS; k++) {
+
+                    for (int l = 0; l < MACROBLOCK_COLUMNS; l++) {
+
+//                        // Set constructor params.
+//                        Macroblock macroblock = picture.getGobs()[i][j].getMacroblocks()[k][l];
+//                        picture.getGobs()[i][j].getMacroblocks()[k][l] = new Macroblock();
+                        this.writeMacroblockHeader(k, l);
                         Pair<Integer, Integer> marcroblockStartRowAndColumn = getMarcroblockStartRowAndColumn(i, j, k, l);
                         int[][][] blocks = toBlocks(
                                 marcroblockStartRowAndColumn,
                                 yCbCrMatrix
                         );
-                        int[][][] previousBlocks = toBlocks(
-                                marcroblockStartRowAndColumn,
-                                this.previousyCbCrMatrix
-                        );
-                        encodeMacroblock(
-                                blocks,
-                                previousBlocks,
-                                macroblock,
-                                picture.getFrameType()
-                        );
+                        writeMacroblock(blocks);
                     }
                 }
             }
         }
 
-        this.previousyCbCrMatrix = yCbCrMatrix;
-
-        return picture;
     }
 
     private int[][][] toBlocks (
@@ -151,7 +134,7 @@ public class H261Encoder {
             final int[][][] yCbCr
     ) {
 
-        int[][][] blocks = new int[Macroblock.TOTAL_BLOCKS][Block.BLOCK_SIZE][Block.BLOCK_SIZE];
+        int[][][] blocks = new int[TOTAL_BLOCKS][BLOCK_SIZE][BLOCK_SIZE];
 
         for (int i = pixelRowAndColumn.getKey(); i < pixelRowAndColumn.getKey() + 16; i++) {
 
@@ -184,33 +167,44 @@ public class H261Encoder {
         return blocks;
     }
 
-    private void encodeMacroblock (
-            int[][][] blocks,
-            int[][][] previousMacroblockBlocks,
-            Macroblock macroblock,
-            FrameType frameType
-    ) {
+    private void writePictureHeader (int temporalReference) throws IOException {
 
-        if (frameType == FrameType.P_FRAME) {
+        this.bebaos.write(0b0000_0000_0000_0001_0000, 20); // PSC (20 bits)
+        this.bebaos.write(temporalReference, 5); // TR (5 bits)
+        this.bebaos.write(0b0010_1000, 6); // PTYPE (6 bits), 4th bit is CIF and 6th bit is Spare (Spares should be 1)
+        this.bebaos.write(0, 1); // PEI (1 bit)
+    }
 
-            blocks = calculateIFrameDiff(blocks, previousMacroblockBlocks, macroblock);
-        }
+    private void writeGobHeader (final int i, final int j) {
 
-        for (int i = 0; i < Macroblock.TOTAL_BLOCKS; i++) {
+    }
+
+    private void writeMacroblockHeader (final int k, final int l) {
+
+    }
+
+    private void writeMacroblock (int[][][] blocks) {
+
+        for (int i = 0; i < TOTAL_BLOCKS; i++) {
 
             int[][] block = blocks[i];
             double[][] dctBlock = dct(block);
             int[][] quantizedBlock = quantize(dctBlock);
             int[] zigzagOrderSequence = zigzag(quantizedBlock);
             int[] runLengthedSequence = runLength(zigzagOrderSequence);
-            byte[] huffmanEncoded = huffman(runLengthedSequence);
-            macroblock.getBlocks()[i].setCoefficients(huffmanEncoded);
+            writeHuffman(runLengthedSequence);
+
+            this.writeBlockEnd();
         }
+    }
+
+    private void writeBlockEnd () {
+
     }
 
     public double[][] dct (int[][] matrix) {
 
-        int n = Block.BLOCK_SIZE, m = Block.BLOCK_SIZE;
+        int n = BLOCK_SIZE, m = BLOCK_SIZE;
         double pi = 3.142857;
 
         int i, j, k, l;
@@ -256,10 +250,10 @@ public class H261Encoder {
 
     public int[][] quantize (double[][] matrix) {
 
-        int[][] quantizedBlocks = new int[Block.BLOCK_SIZE][Block.BLOCK_SIZE];
-        for (int i = 0; i < Block.BLOCK_SIZE; i++) {
+        int[][] quantizedBlocks = new int[BLOCK_SIZE][BLOCK_SIZE];
+        for (int i = 0; i < BLOCK_SIZE; i++) {
 
-            for (int j = 0; j < Block.BLOCK_SIZE; j++) {
+            for (int j = 0; j < BLOCK_SIZE; j++) {
 
                 quantizedBlocks[i][j] =
                         (int) Math.round(
@@ -317,35 +311,11 @@ public class H261Encoder {
         return encodedArray;
     }
 
-    private byte[] huffman (final int[] sequence) {
+    private void writeHuffman (final int[] sequence) {
 
-        return new H261Huffman().getEncodedData(sequence);
+        new H261Huffman().getEncodedData(sequence);
     }
 
-
-    private static int[][][] calculateIFrameDiff (
-            final int[][][] blocks,
-            final int[][][] previousBlocks,
-            final Macroblock macroblock
-    ) {
-
-        // Calculate diff. if it's a P-frame
-        for (int i = 0; i < Macroblock.TOTAL_BLOCKS; i++) {
-
-            int[][] block = blocks[i];
-            int[][] previousBlock = previousBlocks[i];
-            for (int j = 0; j < block.length; j++) {
-
-                for (int k = 0; k < block[j].length; k++) {
-
-                    block[j][k] -= previousBlock[j][k];
-                    macroblock.setDifferent(macroblock.isDifferent() || block[j][k] != 0);
-                }
-            }
-        }
-
-        return blocks;
-    }
 
     private Pair<Integer, Integer> getMarcroblockStartRowAndColumn (
             final int gobRow,
@@ -360,17 +330,17 @@ public class H261Encoder {
         );
     }
 
-    private BufferedImage loadImage () throws IOException {
+    private BufferedImage loadImage () {
 
         return this.frameGenerator.generateFrame();
     }
 
     private int[][][] rgbToYCbCr (BufferedImage image) {
 
-        int[][][] yCbCr = new int[Picture.HEIGHT][Picture.WIDTH][3];
-        for (int y = 0; y < Picture.HEIGHT; y++) {
+        int[][][] yCbCr = new int[PICTURE_HEIGHT][PICTURE_WIDTH][3];
+        for (int y = 0; y < PICTURE_HEIGHT; y++) {
 
-            for (int x = 0; x < Picture.WIDTH; x++) {
+            for (int x = 0; x < PICTURE_WIDTH; x++) {
 
                 int rgb = image.getRGB(x, y);
                 int r = (rgb >> 16) & 0xFF;

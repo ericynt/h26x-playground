@@ -2,6 +2,7 @@ package org.ijntema.eric.model;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.BitSet;
 
 import lombok.Data;
 
@@ -29,6 +30,17 @@ public class GOB implements ByteArrayable {
         this.macroblocks = new Macroblock[MACROBLOCK_ROWS][MACROBLOCK_COLUMNS];
     }
 
+    private byte[] createHeader () {
+
+        byte[] header = new byte[4];
+        header[0] = 0b0000_0000; // 8 bit start code part
+        header[1] = 0b0000_0001; // 8 bit start code part
+        header[3] = (byte) (groupNumber << 4 | gquant >> 1); // 8 bit group number and quantizer
+        header[4] = (byte) (gquant << 7); // 1 bit quantizer, 1 bit extra insertion information
+
+        return header;
+    }
+
     @Override
     public byte[] toByteArray () throws IOException {
 
@@ -45,6 +57,9 @@ public class GOB implements ByteArrayable {
                 baos.write(macroblock.toByteArray());
             }
         }
+
+        BitSet bitSet = new BitSet();
+        bitSet.set(0, true);
 
         return baos.toByteArray();
     }
