@@ -43,8 +43,8 @@ public class H261Encoder {
 
     private final BigEndianBitOutputStream bebaosFirst;
     private final BigEndianBitOutputStream bebaosSecond;
-    private       ByteArrayOutputStream    baosFirst;
-    private       ByteArrayOutputStream    baosSecond;
+    private final ByteArrayOutputStream    baosFirst;
+    private final ByteArrayOutputStream    baosSecond;
     private       boolean                  firstStream = true;
     private       boolean                  lastGob     = false;
 
