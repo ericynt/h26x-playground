@@ -9,8 +9,12 @@ import java.util.List;
 import java.util.Map;
 
 import javafx.util.Pair;
+import lombok.extern.slf4j.Slf4j;
 import org.ijntema.eric.bitstream.BigEndianBitOutputStream;
+import org.ijntema.eric.streamers.RTPpacket;
+import org.ijntema.eric.streamers.UdpStreamer;
 
+@Slf4j
 public class H261Encoder {
 
     private final SpaceInvaderAnimation frameGenerator = new SpaceInvaderAnimation();
@@ -97,12 +101,20 @@ public class H261Encoder {
 
     public static void main (String[] args) throws IOException {
 
+        log.info("Starting H261Encoder");
+
         new H261Encoder().encode();
     }
 
     public void encode () throws IOException {
 
         int temporalReferenceCount = 0;
+
+        UdpStreamer udpStreamer = new UdpStreamer();
+        Thread t = new Thread(udpStreamer);
+        t.setDaemon(true);
+        t.start();
+        int sequence = 0;
 
         while (true) {
 
@@ -120,12 +132,39 @@ public class H261Encoder {
                 writePicture(temporalReferenceCount);
 
                 // Send the packet
-                byte[] packet = getH261Packet();
+                byte[] h261PacketBytes = getH261Packet();
+                byte[] rtpPacketBytes;
+                rtpPacketBytes = createRtpPacketBytes(sequence, h261PacketBytes);
+                int byteCount = 0;
+                int partSize = 1024;
+                byte[] rtpPacketPart = new byte[partSize];
+                for (byte b : rtpPacketBytes) {
+
+                   rtpPacketPart[byteCount] = b;
+
+                   byteCount++;
+
+                   if (byteCount == partSize) {
+
+                       udpStreamer.getPacketQueue().put(rtpPacketPart);
+                       byteCount = 0;
+                   }
+                }
+
+                log.info("Added RTP packet to queue");
 
                 Thread.sleep(1000 / FRAMES_PER_SECOND);
             } catch (InterruptedException e) {
 
                 e.printStackTrace();
+            }
+
+            if (sequence == Integer.MAX_VALUE) {
+
+                sequence = 0;
+            } else {
+
+                sequence++;
             }
 
             temporalReferenceCount++;
@@ -183,18 +222,18 @@ public class H261Encoder {
 
     private int[][][] rgbToYCbCr (BufferedImage image) {
 
-        int[][][] yCbCr = new int[PICTURE_HEIGHT][PICTURE_WIDTH][3];
-        for (int y = 0; y < PICTURE_HEIGHT; y++) {
+        int[][][] yCbCr = new int[PICTURE_WIDTH][PICTURE_HEIGHT][3];
+        for (int x = 0; x < PICTURE_WIDTH; x++) {
 
-            for (int x = 0; x < PICTURE_WIDTH; x++) {
+            for (int y = 0; y < PICTURE_HEIGHT; y++) {
 
                 int rgb = image.getRGB(x, y);
                 int r = (rgb >> 16) & 0xFF;
                 int g = (rgb >> 8) & 0xFF;
                 int b = rgb & 0xFF;
-                yCbCr[y][x][0] = (int) (0.299 * r + 0.587 * g + 0.114 * b);
-                yCbCr[y][x][1] = (int) (-0.1687 * r - 0.3313 * g + 0.5 * b + 128);
-                yCbCr[y][x][2] = (int) (0.5 * r - 0.4187 * g - 0.0813 * b + 128);
+                yCbCr[x][y][0] = (int) (0.299 * r + 0.587 * g + 0.114 * b);
+                yCbCr[x][y][1] = (int) (-0.1687 * r - 0.3313 * g + 0.5 * b + 128);
+                yCbCr[x][y][2] = (int) (0.5 * r - 0.4187 * g - 0.0813 * b + 128);
             }
         }
 
@@ -232,8 +271,8 @@ public class H261Encoder {
     ) {
 
         return new Pair<>(
-                (gobRow * macroblockRow) + macroblockRow,
-                (gobColumn * macroblockColumn) + macroblockColumn
+                ((gobColumn * MACROBLOCK_COLUMNS) + macroblockColumn) * 16,
+                ((gobRow * MACROBLOCK_ROWS) + macroblockRow) * 16
         );
     }
 
@@ -248,26 +287,28 @@ public class H261Encoder {
 
             for (int j = pixelRowAndColumn.getValue(); j < pixelRowAndColumn.getValue() + 16; j++) {
 
+                int x = i % 16;
+                int y = j % 16;
                 // Y
-                if (i < 8 && j < 8) {
+                if (x < 8 && y < 8) { // Bottom left
 
-                    blocks[0][i][j] = yCbCr[i][j][0];
-                } else if (i < 8) {
+                    blocks[2][x][y] = yCbCr[i][j][0];
+                } else if (x < 8) { // Top left
 
-                    blocks[1][i][j - 8] = yCbCr[i][j][0];
-                } else if (j < 8) {
+                    blocks[0][x][y - 8] = yCbCr[i][j][0];
+                } else if (y < 8) { // Bottom right
 
-                    blocks[2][i - 8][j] = yCbCr[i][j][0];
-                } else {
+                    blocks[3][x - 8][y] = yCbCr[i][j][0];
+                } else { // Top right
 
-                    blocks[3][i - 8][j - 8] = yCbCr[i][j][0];
+                    blocks[1][x - 8][y - 8] = yCbCr[i][j][0];
                 }
 
                 // CbCr
-                if (i % 2 == 0 && j % 2 == 0) {
+                if (x % 2 == 0 && y % 2 == 0) {
 
-                    blocks[4][i / 2][j / 2] = yCbCr[i][j][1];
-                    blocks[5][i / 2][j / 2] = yCbCr[i][j][2];
+                    blocks[4][x / 2][y / 2] = yCbCr[i][j][1];
+                    blocks[5][x / 2][y / 2] = yCbCr[i][j][2];
                 }
             }
         }
@@ -436,7 +477,7 @@ public class H261Encoder {
         }
 
         int streamIndex = 0;
-        while (streamIndex + 1 < stuffingAmount) {
+        while (streamIndex < stuffingAmount) {
 
             streamList.get(streamIndex).write(0b0000_0001_111, 11); // Write stuffing bits
 
@@ -453,16 +494,37 @@ public class H261Encoder {
                 firstStream.write(stream.getBuffer(), stream.getBufferBitCount());
             }
             byte[] byteArray = ((ByteArrayOutputStream) this.streamList.get(i).getOutputStream()).toByteArray();
-            for (byte b: byteArray) {
-                firstStream.write(b,8);
+            for (byte b : byteArray) {
+                firstStream.write(b, 8);
             }
         }
 
-        if (firstStream.getBufferBitCount() == 0) {
+        if (firstStream.getBufferBitCount() != 0) {
 
             throw new IllegalStateException("The packet should be byte aligned!");
         }
 
+        this.streamList.clear();
+        streamList.add(new BigEndianBitOutputStream(new ByteArrayOutputStream()));
+
         return ((ByteArrayOutputStream) firstStream.getOutputStream()).toByteArray();
+    }
+
+    private static byte[] createRtpPacketBytes (final int sequence, final byte[] h261PacketBytes) {
+
+        byte[] rtpPacketBytes;
+        RTPpacket rtpPacket =
+                new RTPpacket(
+                        31, // H.261 payload type
+                        sequence,
+                        sequence * (1000 / FRAMES_PER_SECOND),
+                        h261PacketBytes,
+                        h261PacketBytes.length
+                );
+        int rtpPacketLength = rtpPacket.getlength();
+        rtpPacketBytes = new byte[rtpPacketLength];
+        rtpPacket.getpacket(rtpPacketBytes);
+
+        return rtpPacketBytes;
     }
 }
