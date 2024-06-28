@@ -48,4 +48,9 @@ public abstract class BitOutputStream extends BitStream {
         }
         out.close();
     }
+
+    public OutputStream getOutputStream () {
+
+        return out;
+    }
 }

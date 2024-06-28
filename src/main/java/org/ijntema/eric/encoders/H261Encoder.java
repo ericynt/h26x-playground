@@ -41,12 +41,9 @@ public class H261Encoder {
             {35, 36, 48, 49, 57, 58, 62, 63}
     };
 
-    private final BigEndianBitOutputStream bebaosFirst;
-    private final BigEndianBitOutputStream bebaosSecond;
-    private final ByteArrayOutputStream    baosFirst;
-    private final ByteArrayOutputStream    baosSecond;
-    private       boolean                  firstStream = true;
-    private       boolean                  lastGob     = false;
+    private boolean                        firstStream = true;
+    private boolean                        lastGob     = false;
+    private List<BigEndianBitOutputStream> streamList  = new ArrayList<>();
 
     static {
 
@@ -95,10 +92,7 @@ public class H261Encoder {
 
     public H261Encoder () {
 
-        this.baosFirst = new ByteArrayOutputStream();
-        this.baosSecond = new ByteArrayOutputStream();
-        this.bebaosFirst = new BigEndianBitOutputStream(this.baosFirst);
-        this.bebaosSecond = new BigEndianBitOutputStream(this.baosSecond);
+        streamList.add(new BigEndianBitOutputStream(new ByteArrayOutputStream()));
     }
 
     public static void main (String[] args) throws IOException {
@@ -126,6 +120,7 @@ public class H261Encoder {
                 writePicture(temporalReferenceCount);
 
                 // Send the packet
+                byte[] packet = getH261Packet();
 
                 Thread.sleep(1000 / FRAMES_PER_SECOND);
             } catch (InterruptedException e) {
@@ -224,6 +219,7 @@ public class H261Encoder {
 
         int macroblockAddress = (row * MACROBLOCK_COLUMNS) + column + 1;
         Pair<Integer, Integer> vlc = VLC_TABLE_MACROBLOCK_ADDRESS.get(macroblockAddress);
+        newStream(); // Switch the stream so later MBA stuffing bits can be added if needed
         this.getOutputStream().write(vlc.getKey(), vlc.getValue()); // MACROBLOCK ADDRESS (variable length)
         this.getOutputStream().write(0b0001, 4); // MTYPE (4 bit)
     }
@@ -416,17 +412,57 @@ public class H261Encoder {
 
     private BigEndianBitOutputStream getOutputStream () {
 
-        if (this.firstStream) {
-
-            return this.bebaosFirst;
-        } else {
-
-            return this.bebaosSecond;
-        }
+        return this.streamList.get(this.streamList.size() - 1);
     }
 
-    private void switchStream () {
+    private void newStream () {
 
-        this.firstStream = !this.firstStream;
+        this.streamList.add(new BigEndianBitOutputStream(new ByteArrayOutputStream()));
+    }
+
+    private byte[] getH261Packet () throws IOException {
+
+        int restCount = 0;
+        for (BigEndianBitOutputStream stream : this.streamList) {
+
+            restCount += stream.getBufferBitCount();
+        }
+
+        int stuffingAmount = 0;
+        while (restCount % 8 != 0) {
+
+            restCount += 11;
+            stuffingAmount++;
+        }
+
+        int streamIndex = 0;
+        while (streamIndex + 1 < stuffingAmount) {
+
+            streamList.get(streamIndex).write(0b0000_0001_111, 11); // Write stuffing bits
+
+            streamIndex++;
+        }
+
+        // Add all the streams to the first stream
+        BigEndianBitOutputStream firstStream = this.streamList.get(0);
+        for (int i = 1; i < this.streamList.size(); i++) {
+
+            BigEndianBitOutputStream stream = this.streamList.get(i);
+            if (stream.getBufferBitCount() > 0) {
+
+                firstStream.write(stream.getBuffer(), stream.getBufferBitCount());
+            }
+            byte[] byteArray = ((ByteArrayOutputStream) this.streamList.get(i).getOutputStream()).toByteArray();
+            for (byte b: byteArray) {
+                firstStream.write(b,8);
+            }
+        }
+
+        if (firstStream.getBufferBitCount() == 0) {
+
+            throw new IllegalStateException("The packet should be byte aligned!");
+        }
+
+        return ((ByteArrayOutputStream) firstStream.getOutputStream()).toByteArray();
     }
 }
