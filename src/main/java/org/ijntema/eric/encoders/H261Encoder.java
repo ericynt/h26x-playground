@@ -11,7 +11,8 @@ import java.util.Map;
 import javafx.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.ijntema.eric.bitstream.BigEndianBitOutputStream;
-import org.ijntema.eric.streamers.RTPpacket;
+import org.ijntema.eric.frames.SpaceInvaderAnimation;
+import org.ijntema.eric.packets.RTPpacket;
 import org.ijntema.eric.streamers.UdpStreamer;
 
 @Slf4j

@@ -22,7 +22,7 @@ public class UdpStreamer extends Thread {
 
     public UdpStreamer () throws SocketException {
 
-        socket = new DatagramSocket(55555);
+        socket = new DatagramSocket(55554);
     }
 
     public void run () {
@@ -36,37 +36,41 @@ public class UdpStreamer extends Thread {
 
             while (true) {
 
-                if (address == null) {
-
-                    DatagramPacket receivedPacket
-                            = new DatagramPacket(buf, buf.length);
-                    try {
-
-                        socket.receive(receivedPacket);
-                    } catch (IOException e) {
-
-                        throw new RuntimeException(e);
-                    }
-
-                    address = receivedPacket.getAddress();
-                    port = receivedPacket.getPort();
-
-                    log.info("Received connection from {}:{}", address, port);
-                } else {
+//                if (address == null) {
+//
+//                    DatagramPacket receivedPacket
+//                            = new DatagramPacket(buf, buf.length);
+//                    try {
+//
+//                        socket.receive(receivedPacket);
+//                    } catch (IOException e) {
+//
+//                        throw new RuntimeException(e);
+//                    }
+//
+//                    address = receivedPacket.getAddress();
+//                    port = receivedPacket.getPort();
+//
+//                    log.info("Received connection from {}:{}", address, port);
+//                } else {
 
                     try {
 
                         byte[] bytes = this.packetQueue.take(); // blocks until new data is available
-                        DatagramPacket packet = new DatagramPacket(bytes, bytes.length, address, port);
+//                        DatagramPacket packet = new DatagramPacket(bytes, bytes.length, address, port);
+                        InetAddress host = InetAddress.getByName("localhost");
+                        int port1 = 55555;
+                        DatagramPacket packet = new DatagramPacket(bytes, bytes.length, host, port1);
 
-                        log.info("Sending UDP packet to {}:{}", address, port);
+//                        log.info("Sending UDP packet to {}:{}", address, port);
+                        log.info("Sending UDP packet to {}:{}", host.getHostAddress(), port1);
 
                         socket.send(packet);
                     } catch (InterruptedException | IOException e) {
 
                         throw new RuntimeException(e);
                     }
-                }
+//                }
             }
         } finally {
 

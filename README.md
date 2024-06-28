@@ -34,3 +34,8 @@
 - Look into RTCP and RTSP
 - Look into MPEG-TS
 - H.264 support
+
+# ffmpeg
+- ffmpeg -i input.mp4 -vf scale=352:288 -r 30 -f image2 %04d.jpg
+- ffmpeg -stream_loop 10 -re -i "echo-hereweare.mp4" -f mpegts "udp://localhost:9999"
+- ffplay udp://127.0.0.1:9999 -loglevel debug
