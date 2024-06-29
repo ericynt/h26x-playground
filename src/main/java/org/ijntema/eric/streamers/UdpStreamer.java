@@ -45,6 +45,8 @@ public class UdpStreamer extends Thread {
             }
         } finally {
 
+            log.info("Shutting down UDP streamer");
+
             socket.close();
         }
     }

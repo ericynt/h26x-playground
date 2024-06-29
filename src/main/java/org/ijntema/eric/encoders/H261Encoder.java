@@ -113,8 +113,6 @@ public class H261Encoder {
 
         int temporalReferenceCount = 0; // 0 - 31, increment for every Picture
 
-        int sequence = 0; // Used to identify the Datagram
-
         while (true) {
 
             if (temporalReferenceCount == 32) {
@@ -128,45 +126,44 @@ public class H261Encoder {
 
                 for (int j = 0; j < GOB_COLUMNS; j++) {
 
-                    writeH261Header();
-                    this.writePictureHeader(temporalReferenceCount);
-                    this.writeGobHeader(i, j);
-                    for (int k = 0; k < MACROBLOCK_ROWS; k++) {
-
-                        for (int l = 0; l < MACROBLOCK_COLUMNS; l++) {
-
-                            Pair<Integer, Integer> marcroblockStartRowAndColumn = this.getMarcroblockStartRowAndColumn(i, j, k, l);
-                            int[][][] blocks = toBlocks(
-                                    marcroblockStartRowAndColumn,
-                                    yCbCrMatrix
-                            );
-                            this.writeMacroblock(blocks, k, l);
-                        }
-                    }
+                    sendH261PacketToQueue(temporalReferenceCount, i, j, yCbCrMatrix);
                 }
             }
 
-            this.byteAlignStream();
-
-            // Add packet to the Queue
-            ByteArrayOutputStream baos = (ByteArrayOutputStream) this.stream.getOutputStream();
-            this.udpStreamer.getPacketQueue().add(baos.toByteArray());
-
-            // Reset the stream
-            baos.reset();
-
-            Thread.sleep(1); // ~30 fps, (1000 / 30) / 33 = 1, 1 BOG per packet
-
-            if (sequence == Integer.MAX_VALUE) {
-
-                sequence = 0;
-            } else {
-
-                sequence++;
-            }
+            Thread.sleep(1); // ~30 fps: (1000 / 30) / 33 = 1 ms, 1 GOB per packet
 
             temporalReferenceCount++;
         }
+    }
+
+    private void sendH261PacketToQueue (final int temporalReferenceCount, final int i, final int j, final int[][][] yCbCrMatrix) throws IOException {
+
+        writeH261Header();
+        this.writePictureHeader(temporalReferenceCount);
+        this.writeGobHeader(i, j);
+
+        for (int k = 0; k < MACROBLOCK_ROWS; k++) {
+
+            for (int l = 0; l < MACROBLOCK_COLUMNS; l++) {
+
+                this.writeMacroblockHeader(k, l);
+
+                Pair<Integer, Integer> marcroblockStartRowAndColumn = this.getMarcroblockStartRowAndColumn(i, j, k, l);
+                int[][][] blocks = toBlocks(
+                        marcroblockStartRowAndColumn,
+                        yCbCrMatrix
+                );
+
+                this.writeMacroblock(blocks);
+            }
+        }
+
+        this.byteAlignStream();
+        // Add packet to the Queue
+        ByteArrayOutputStream baos = (ByteArrayOutputStream) this.stream.getOutputStream();
+        this.udpStreamer.getPacketQueue().add(baos.toByteArray());
+        // Reset the stream
+        baos.reset();
     }
 
     private int[][][] rgbToYCbCr (BufferedImage image) {
@@ -280,9 +277,7 @@ public class H261Encoder {
         return blocks;
     }
 
-    private void writeMacroblock (int[][][] blocks, int row, int column) throws IOException {
-
-        this.writeMacroblockHeader(row, column);
+    private void writeMacroblock (int[][][] blocks) throws IOException {
 
         for (int i = 0; i < TOTAL_BLOCKS; i++) {
 
@@ -426,6 +421,12 @@ public class H261Encoder {
 
             int numBits = 8 - bufferBitCount;
             this.stream.write(0, numBits); // Byte align
+
+            if (this.stream.getBufferBitCount() != 0) {
+
+                throw new RuntimeException("Stream is not byte aligned!");
+            }
+
             byte[] byteArray = ((ByteArrayOutputStream) this.stream.getOutputStream()).toByteArray();
             int headerFirstByte = byteArray[0];
             headerFirstByte =
