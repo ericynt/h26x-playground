@@ -123,17 +123,12 @@ public class H261Encoder {
 
                 int[][][] yCbCrMatrix = rgbToYCbCr(this.frameGenerator.generateFrame());
 
-                writeH261Header();
-
                 for (int i = 0; i < GOB_ROWS; i++) {
-
-                    if (i == 0) { // Only write picture header for the first GOB
-
-                        this.writePictureHeader(temporalReferenceCount);
-                    }
 
                     for (int j = 0; j < GOB_COLUMNS; j++) {
 
+                        this.writeH261Header();
+                        this.writePictureHeader(temporalReferenceCount);
                         this.writeGobHeader(i, j);
 
                         for (int k = 0; k < MACROBLOCK_ROWS; k++) {
@@ -142,7 +137,8 @@ public class H261Encoder {
 
                                 this.writeMacroblockHeader(k, l);
 
-                                Pair<Integer, Integer> marcroblockStartRowAndColumn = this.getMarcroblockStartRowAndColumn(i, j, k, l);
+                                Pair<Integer, Integer> marcroblockStartRowAndColumn =
+                                        this.getMarcroblockStartRowAndColumn(i, j, k, l);
                                 int[][][] blocks = toBlocks(
                                         marcroblockStartRowAndColumn,
                                         yCbCrMatrix
