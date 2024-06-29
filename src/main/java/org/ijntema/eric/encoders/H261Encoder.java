@@ -167,7 +167,7 @@ public class H261Encoder {
                     }
                 }
 
-                Thread.sleep(29); // ~30 fps (spec: frame rate (i.e. 30000/1001 or approx. 29.97 Hz))
+                Thread.sleep(27); // ~30 fps (spec: frame rate (i.e. 30000/1001 or approx. 29.97 Hz))
                 // Creating the packet also takes time, so the frame rate is not exactly 30 fps
 
                 temporalReferenceCount++;
