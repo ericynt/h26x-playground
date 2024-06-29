@@ -127,9 +127,14 @@ public class H261Encoder {
 
                     for (int j = 0; j < GOB_COLUMNS; j++) {
 
-                        this.writeH261Header();
-                        this.writePictureHeader(temporalReferenceCount);
-                        this.writeGobHeader(i, j);
+                        this.writeH261Header(); // Every packet has a H261 Header
+
+                        if (i == 0 && j == 0) { // First packet for a Picture has a Picture Header
+
+                            this.writePictureHeader(temporalReferenceCount);
+                        }
+
+                        this.writeGobHeader(i, j); // We are create a packet per GOB, so every packet has a GOB Header
 
                         for (int k = 0; k < MACROBLOCK_ROWS; k++) {
 
@@ -148,12 +153,10 @@ public class H261Encoder {
                             }
                         }
 
-                        this.byteAlignStream();
-                        // Add packet to the Queue
-                        ByteArrayOutputStream baos = (ByteArrayOutputStream) this.stream.getOutputStream();
-                        this.udpStreamer.getPacketQueue().add(baos.toByteArray());
+                        byte[] h261Packet = this.byteAlignStream();
+                        this.udpStreamer.getPacketQueue().add(h261Packet);
                         // Reset the stream
-                        baos.reset();
+                        ((ByteArrayOutputStream)this.stream.getOutputStream()).reset();
                     }
                 }
 
@@ -411,11 +414,6 @@ public class H261Encoder {
         this.stream.write(2, 2);
     }
 
-    private byte[] getH261Packet () throws IOException {
-
-        return byteAlignStream();
-    }
-
     private byte[] byteAlignStream () throws IOException {
 
         int bufferBitCount = this.stream.getBufferBitCount();
@@ -433,7 +431,7 @@ public class H261Encoder {
             int headerFirstByte = byteArray[0];
             headerFirstByte =
                     (headerFirstByte & 0b1110_0011) // Clear EBIT
-                            | (bufferBitCount << 2); // and then set with bufferBigCount value
+                            | (numBits << 2); // and then set with bufferBigCount value
             byteArray[0] = (byte) headerFirstByte;
 
             return byteArray;
