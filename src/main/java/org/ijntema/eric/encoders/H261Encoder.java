@@ -3,6 +3,7 @@ package org.ijntema.eric.encoders;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -12,15 +13,14 @@ import javafx.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.ijntema.eric.bitstream.BigEndianBitOutputStream;
 import org.ijntema.eric.frames.SpaceInvaderAnimation;
-import org.ijntema.eric.packets.RTPpacket;
 import org.ijntema.eric.streamers.UdpStreamer;
 
 @Slf4j
 public class H261Encoder {
 
-    private final SpaceInvaderAnimation frameGenerator = new SpaceInvaderAnimation();
+    private final SpaceInvaderAnimation    frameGenerator = new SpaceInvaderAnimation();
+    private final BigEndianBitOutputStream stream         = new BigEndianBitOutputStream(new ByteArrayOutputStream());
 
-    private static final int                                  FRAMES_PER_SECOND            = 20;
     public static final  int                                  PICTURE_WIDTH                = 352;
     public static final  int                                  PICTURE_HEIGHT               = 288;
     private static final int                                  GOB_ROWS                     = 6;
@@ -45,10 +45,6 @@ public class H261Encoder {
             {21, 34, 37, 47, 50, 56, 59, 61},
             {35, 36, 48, 49, 57, 58, 62, 63}
     };
-
-    private boolean                        firstStream = true;
-    private boolean                        lastGob     = false;
-    private List<BigEndianBitOutputStream> streamList  = new ArrayList<>();
 
     static {
 
@@ -95,70 +91,71 @@ public class H261Encoder {
         VLC_TABLE_MACROBLOCK_ADDRESS.put(33, new Pair<>(0b0000_0011_000, 11));
     }
 
-    public H261Encoder () {
+    private final UdpStreamer udpStreamer;
 
-        streamList.add(new BigEndianBitOutputStream(new ByteArrayOutputStream()));
+    public H261Encoder () throws SocketException {
+
+        // Start the UDP streamer
+        udpStreamer = new UdpStreamer();
+        Thread t = new Thread(udpStreamer);
+        t.setDaemon(true);
+        t.start();
     }
 
-    public static void main (String[] args) throws IOException {
+    public static void main (String[] args) throws IOException, InterruptedException {
 
         log.info("Starting H261Encoder");
 
         new H261Encoder().encode();
     }
 
-    public void encode () throws IOException {
+    public void encode () throws IOException, InterruptedException {
 
-        int temporalReferenceCount = 0;
+        int temporalReferenceCount = 0; // 0 - 31, increment for every Picture
 
-        UdpStreamer udpStreamer = new UdpStreamer();
-        Thread t = new Thread(udpStreamer);
-        t.setDaemon(true);
-        t.start();
-        int sequence = 0;
+        int sequence = 0; // Used to identify the Datagram
 
         while (true) {
 
-            try {
+            if (temporalReferenceCount == 32) {
 
-                this.lastGob = false;
-
-                writeH261Header();
-
-                if (temporalReferenceCount == 32) {
-
-                    temporalReferenceCount = 0;
-                }
-
-                writePicture(temporalReferenceCount);
-
-                // Send the packet
-                byte[] h261PacketBytes = getH261Packet();
-                byte[] rtpPacketBytes;
-                rtpPacketBytes = createRtpPacketBytes(sequence, h261PacketBytes);
-                int byteCount = 0;
-                int partSize = 1024;
-                byte[] rtpPacketPart = new byte[partSize];
-                for (byte b : rtpPacketBytes) {
-
-                   rtpPacketPart[byteCount] = b;
-
-                   byteCount++;
-
-                   if (byteCount == partSize) {
-
-                       udpStreamer.getPacketQueue().put(rtpPacketPart);
-                       byteCount = 0;
-                   }
-                }
-
-                log.info("Added RTP packet to queue");
-
-                Thread.sleep(1000 / FRAMES_PER_SECOND);
-            } catch (InterruptedException e) {
-
-                e.printStackTrace();
+                temporalReferenceCount = 0;
             }
+
+            int[][][] yCbCrMatrix = rgbToYCbCr(this.frameGenerator.generateFrame());
+
+            for (int i = 0; i < GOB_ROWS; i++) {
+
+                for (int j = 0; j < GOB_COLUMNS; j++) {
+
+                    writeH261Header();
+                    this.writePictureHeader(temporalReferenceCount);
+                    this.writeGobHeader(i, j);
+                    for (int k = 0; k < MACROBLOCK_ROWS; k++) {
+
+                        for (int l = 0; l < MACROBLOCK_COLUMNS; l++) {
+
+                            Pair<Integer, Integer> marcroblockStartRowAndColumn = this.getMarcroblockStartRowAndColumn(i, j, k, l);
+                            int[][][] blocks = toBlocks(
+                                    marcroblockStartRowAndColumn,
+                                    yCbCrMatrix
+                            );
+                            this.writeMacroblock(blocks, k, l);
+                        }
+                    }
+                }
+            }
+
+            this.byteAlignStream();
+
+            // Add packet to the Queue
+            ByteArrayOutputStream baos = (ByteArrayOutputStream) this.stream.getOutputStream();
+            this.udpStreamer.getPacketQueue().add(baos.toByteArray());
+
+            // Reset the stream
+            baos.reset();
+
+            Thread.sleep(1); // ~30 fps, (1000 / 30) / 33 = 1, 1 BOG per packet
 
             if (sequence == Integer.MAX_VALUE) {
 
@@ -170,55 +167,6 @@ public class H261Encoder {
 
             temporalReferenceCount++;
         }
-    }
-
-    private void writeH261Header () throws IOException {
-
-        this.getOutputStream().write(0, 3); // SBIT (3 bits)
-        this.getOutputStream().write(0, 3); // EBIT (3 bits)
-        this.getOutputStream().write(1, 1); // INTRA (1 bit)
-        this.getOutputStream().write(0, 1); // MV flag (1 bit)
-        this.getOutputStream().write(0, 4); // GOBN (4 bits)
-        this.getOutputStream().write(0, 5); // MBAP (5 bits)
-        this.getOutputStream().write(0, 5); // QUANT (5 bits)
-        this.getOutputStream().write(0, 5); // HMVD (5 bits)
-        this.getOutputStream().write(0, 5); // VMVD (5 bits)
-    }
-
-    private void writePicture (int temporalReference) throws IOException {
-
-        this.writePictureHeader(temporalReference);
-
-        int[][][] yCbCrMatrix = rgbToYCbCr(this.frameGenerator.generateFrame());
-
-        for (int i = 0; i < GOB_ROWS; i++) {
-
-            for (int j = 0; j < GOB_COLUMNS; j++) {
-
-                this.writeGobHeader(i, j);
-                for (int k = 0; k < MACROBLOCK_ROWS; k++) {
-
-                    for (int l = 0; l < MACROBLOCK_COLUMNS; l++) {
-
-                        Pair<Integer, Integer> marcroblockStartRowAndColumn = getMarcroblockStartRowAndColumn(i, j, k, l);
-                        int[][][] blocks = toBlocks(
-                                marcroblockStartRowAndColumn,
-                                yCbCrMatrix
-                        );
-                        writeMacroblock(blocks, k, l);
-                    }
-                }
-            }
-        }
-
-    }
-
-    private void writePictureHeader (int temporalReference) throws IOException {
-
-        this.getOutputStream().write(0b0000_0000_0000_0001_0000, 20); // PSC (20 bits)
-        this.getOutputStream().write(temporalReference, 5); // TR (5 bits)
-        this.getOutputStream().write(0b0010_1000, 6); // PTYPE (6 bits), 4th bit is CIF and 6th bit is Spare (Spares should be 1)
-        this.getOutputStream().write(0, 1); // PEI (1 bit)
     }
 
     private int[][][] rgbToYCbCr (BufferedImage image) {
@@ -241,27 +189,42 @@ public class H261Encoder {
         return yCbCr;
     }
 
+    private void writeH261Header () throws IOException {
+
+        this.stream.write(0, 3); // SBIT (3 bits) 0 not used currently
+        this.stream.write(0, 3); // EBIT (3 bits) Amount of bits at the end of the packet that the decoder should ignore, is updated after the packet is created
+        this.stream.write(1, 1); // INTRA (1 bit)
+        this.stream.write(0, 1); // MV flag (1 bit)
+        this.stream.write(0, 4); // GOBN (4 bits) Can be set to 0 because we always have a GOB header is the packet
+        this.stream.write(0, 5); // MBAP (5 bits) Set to 0 because we always have a GOB header is the packet
+        this.stream.write(0, 5); // QUANT (5 bits) Set to 0 because we always have a GOB header is the packet
+        this.stream.write(0, 5); // HMVD (5 bits) Set to 0 because the MV flag is 0
+        this.stream.write(0, 5); // VMVD (5 bits) Set to 0 because the MV flag is 0
+    }
+
+    private void writePictureHeader (int temporalReference) throws IOException {
+
+        this.stream.write(0b0000_0000_0000_0001_0000, 20); // PSC (20 bits)
+        this.stream.write(temporalReference, 5); // TR (5 bits)
+        this.stream.write(0b0010_1000, 6); // PTYPE (6 bits), 4th bit is CIF and 6th bit is Spare (Spares should be 1)
+        this.stream.write(0, 1); // PEI (1 bit)
+    }
+
     private void writeGobHeader (final int row, final int column) throws IOException {
 
-        this.getOutputStream().write(1, 16); // GOB start code (16 bits)
-        int groupNumber = (row * GOB_COLUMNS) + column + 1;
-        this.getOutputStream().write(groupNumber, 4); // GN (4 bits)
-        this.getOutputStream().write(1, 5); // GQUANT (5 bits)
-        this.getOutputStream().write(0, 1); // GEI (1 bit)
-
-        if (groupNumber == 12) {
-
-            this.lastGob = true;
-        }
+        this.stream.write(1, 16); // GOB start code (16 bits)
+        int groupNumber = (row * GOB_COLUMNS) + column + 1; // 1 - 12
+        this.stream.write(groupNumber, 4); // GN (4 bits)
+        this.stream.write(1, 5); // GQUANT (5 bits)
+        this.stream.write(0, 1); // GEI (1 bit)
     }
 
     private void writeMacroblockHeader (final int row, final int column) throws IOException {
 
         int macroblockAddress = (row * MACROBLOCK_COLUMNS) + column + 1;
         Pair<Integer, Integer> vlc = VLC_TABLE_MACROBLOCK_ADDRESS.get(macroblockAddress);
-        newStream(); // Switch the stream so later MBA stuffing bits can be added if needed
-        this.getOutputStream().write(vlc.getKey(), vlc.getValue()); // MACROBLOCK ADDRESS (variable length)
-        this.getOutputStream().write(0b0001, 4); // MTYPE (4 bit)
+        this.stream.write(vlc.getKey(), vlc.getValue()); // MACROBLOCK ADDRESS (variable length)
+        this.stream.write(0b0001, 4); // MTYPE (4 bit)
     }
 
     private Pair<Integer, Integer> getMarcroblockStartRowAndColumn (
@@ -440,92 +403,40 @@ public class H261Encoder {
 
         for (int i = 0; i < sequence.length; i += 2) {
 
-            this.getOutputStream().write(0b0000_01, 6); // ESCAPE (6 bits)
-            this.getOutputStream().write(sequence[i], 6); // RUN (6 bits)
-            this.getOutputStream().write(sequence[i + 1], 8); // LEVEL (8 bits)
+            this.stream.write(0b0000_01, 6); // ESCAPE (6 bits)
+            this.stream.write(sequence[i], 6); // RUN (6 bits)
+            this.stream.write(sequence[i + 1], 8); // LEVEL (8 bits)
         }
     }
 
     private void writeBlockEnd () throws IOException {
 
-
-        this.getOutputStream().write(2, 2);
-    }
-
-    private BigEndianBitOutputStream getOutputStream () {
-
-        return this.streamList.get(this.streamList.size() - 1);
-    }
-
-    private void newStream () {
-
-        this.streamList.add(new BigEndianBitOutputStream(new ByteArrayOutputStream()));
+        this.stream.write(2, 2);
     }
 
     private byte[] getH261Packet () throws IOException {
 
-        int restCount = 0;
-        for (BigEndianBitOutputStream stream : this.streamList) {
-
-            restCount += stream.getBufferBitCount();
-        }
-
-        int stuffingAmount = 0;
-        while (restCount % 8 != 0) {
-
-            restCount += 11;
-            stuffingAmount++;
-        }
-
-        int streamIndex = 0;
-        while (streamIndex < stuffingAmount) {
-
-            streamList.get(streamIndex).write(0b0000_0001_111, 11); // Write stuffing bits
-
-            streamIndex++;
-        }
-
-        // Add all the streams to the first stream
-        BigEndianBitOutputStream firstStream = this.streamList.get(0);
-        for (int i = 1; i < this.streamList.size(); i++) {
-
-            BigEndianBitOutputStream stream = this.streamList.get(i);
-            if (stream.getBufferBitCount() > 0) {
-
-                firstStream.write(stream.getBuffer(), stream.getBufferBitCount());
-            }
-            byte[] byteArray = ((ByteArrayOutputStream) this.streamList.get(i).getOutputStream()).toByteArray();
-            for (byte b : byteArray) {
-                firstStream.write(b, 8);
-            }
-        }
-
-        if (firstStream.getBufferBitCount() != 0) {
-
-            throw new IllegalStateException("The packet should be byte aligned!");
-        }
-
-        this.streamList.clear();
-        streamList.add(new BigEndianBitOutputStream(new ByteArrayOutputStream()));
-
-        return ((ByteArrayOutputStream) firstStream.getOutputStream()).toByteArray();
+        return byteAlignStream();
     }
 
-    private static byte[] createRtpPacketBytes (final int sequence, final byte[] h261PacketBytes) {
+    private byte[] byteAlignStream () throws IOException {
 
-        byte[] rtpPacketBytes;
-        RTPpacket rtpPacket =
-                new RTPpacket(
-                        31, // H.261 payload type
-                        sequence,
-                        sequence * (1000 / FRAMES_PER_SECOND),
-                        h261PacketBytes,
-                        h261PacketBytes.length
-                );
-        int rtpPacketLength = rtpPacket.getlength();
-        rtpPacketBytes = new byte[rtpPacketLength];
-        rtpPacket.getpacket(rtpPacketBytes);
+        int bufferBitCount = this.stream.getBufferBitCount();
+        if (bufferBitCount > 0) {
 
-        return rtpPacketBytes;
+            int numBits = 8 - bufferBitCount;
+            this.stream.write(0, numBits); // Byte align
+            byte[] byteArray = ((ByteArrayOutputStream) this.stream.getOutputStream()).toByteArray();
+            int headerFirstByte = byteArray[0];
+            headerFirstByte =
+                    (headerFirstByte & 0b1110_0011) // Clear EBIT
+                    | (bufferBitCount << 2); // and then set with bufferBigCount value
+            byteArray[0] = (byte) headerFirstByte;
+
+            return byteArray;
+        } else {
+
+            return ((ByteArrayOutputStream) this.stream.getOutputStream()).toByteArray();
+        }
     }
 }
