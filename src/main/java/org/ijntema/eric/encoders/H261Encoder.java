@@ -132,7 +132,7 @@ public class H261Encoder {
                             for (int l = 0; l < MACROBLOCK_COLUMNS; l++) {
 
                                 int gobN = (k == 0 && l == 0) ? 0 : (i * GOB_COLUMNS) + j + 1; // 2 - 12
-                                int mbap = (k == 0 && l == 0) ? 0 : (k * MACROBLOCK_COLUMNS) + l; // Not -1 because is the number of the previous MB, 1 - 32
+                                int mbap = (k == 0 && l == 0) ? 0 : (k * MACROBLOCK_COLUMNS) + l; // Not + 1 because it's the number of the previous MB, 1 - 32
                                 int quant = 0;
                                 this.writeH261Header(gobN, mbap, quant); // Every packet has a H261 Header
 
