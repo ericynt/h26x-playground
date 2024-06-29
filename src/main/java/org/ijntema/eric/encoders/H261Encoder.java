@@ -181,7 +181,7 @@ public class H261Encoder {
         this.getOutputStream().write(0, 4); // GOBN (4 bits)
         this.getOutputStream().write(0, 5); // MBAP (5 bits)
         this.getOutputStream().write(0, 5); // QUANT (5 bits)
-        this.getOutputStream().write(0, 2); // HMVD (2 bits)
+        this.getOutputStream().write(0, 5); // HMVD (5 bits)
         this.getOutputStream().write(0, 5); // VMVD (5 bits)
     }
 
