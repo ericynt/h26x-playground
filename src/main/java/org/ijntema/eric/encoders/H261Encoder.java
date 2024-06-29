@@ -127,18 +127,24 @@ public class H261Encoder {
 
                     for (int j = 0; j < GOB_COLUMNS; j++) {
 
-                        this.writeH261Header(); // Every packet has a H261 Header
-
-                        if (i == 0 && j == 0) { // First packet for a Picture has a Picture Header
-
-                            this.writePictureHeader(temporalReferenceCount);
-                        }
-
-                        this.writeGobHeader(i, j); // We are create a packet per GOB, so every packet has a GOB Header
-
                         for (int k = 0; k < MACROBLOCK_ROWS; k++) {
 
                             for (int l = 0; l < MACROBLOCK_COLUMNS; l++) {
+
+                                int gobN = (k == 0 && l == 0) ? 0 : (i * GOB_COLUMNS) + j + 1; // 2 - 12
+                                int mbap = (k == 0 && l == 0) ? 0 : (k * MACROBLOCK_COLUMNS) + l; // Not -1 because is the number of the previous MB, 1 - 32
+                                int quant = 0;
+                                this.writeH261Header(gobN, mbap, quant); // Every packet has a H261 Header
+
+                                if (i == 0 && j == 0 && k == 0 && l == 0) { // First packet for a Picture has a Picture Header
+
+                                    this.writePictureHeader(temporalReferenceCount);
+                                }
+
+                                if (k == 0 && l == 0) { // First Macroblock packet has a GOB Header
+
+                                    this.writeGobHeader(i, j);
+                                }
 
                                 this.writeMacroblockHeader(k, l);
 
@@ -150,17 +156,19 @@ public class H261Encoder {
                                 );
 
                                 this.writeMacroblock(blocks);
+
+                                byte[] h261Packet = this.byteAlignStream();
+                                this.udpStreamer.getPacketQueue().add(h261Packet);
+                                // Reset the stream
+                                ((ByteArrayOutputStream) this.stream.getOutputStream()).reset();
                             }
                         }
 
-                        byte[] h261Packet = this.byteAlignStream();
-                        this.udpStreamer.getPacketQueue().add(h261Packet);
-                        // Reset the stream
-                        ((ByteArrayOutputStream) this.stream.getOutputStream()).reset();
                     }
                 }
 
-                Thread.sleep(1); // ~30 fps: (1000 / 30) / 33 = 1 ms, 1 GOB per packet
+                Thread.sleep(29); // ~30 fps (spec: frame rate (i.e. 30000/1001 or approx. 29.97 Hz))
+                // Creating the packet also takes time, so the frame rate is not exactly 30 fps
 
                 temporalReferenceCount++;
             }
@@ -191,15 +199,15 @@ public class H261Encoder {
         return yCbCr;
     }
 
-    private void writeH261Header () throws IOException {
+    private void writeH261Header (final int gobN, final int mbap, final int quant) throws IOException {
 
         this.stream.write(0, 3); // SBIT (3 bits) 0 not used currently
         this.stream.write(0, 3); // EBIT (3 bits) Amount of bits at the end of the packet that the decoder should ignore, is updated after the packet is created
         this.stream.write(1, 1); // INTRA (1 bit)
         this.stream.write(0, 1); // MV flag (1 bit)
-        this.stream.write(0, 4); // GOBN (4 bits) Can be set to 0 because we always have a GOB header is the packet
-        this.stream.write(0, 5); // MBAP (5 bits) Set to 0 because we always have a GOB header is the packet
-        this.stream.write(0, 5); // QUANT (5 bits) Set to 0 because we always have a GOB header is the packet
+        this.stream.write(gobN, 4); // GOBN (4 bits) Can be set to 0 because we always have a GOB header is the packet
+        this.stream.write(mbap, 5); // MBAP (5 bits) Set to 0 because we always have a GOB header is the packet
+        this.stream.write(quant, 5); // QUANT (5 bits) Set to 0 because we always have a GOB header is the packet
         this.stream.write(0, 5); // HMVD (5 bits) Set to 0 because the MV flag is 0
         this.stream.write(0, 5); // VMVD (5 bits) Set to 0 because the MV flag is 0
     }
