@@ -18,9 +18,6 @@ import org.ijntema.eric.streamers.UdpStreamer;
 @Slf4j
 public class H261Encoder {
 
-    private final SpaceInvaderAnimation    frameGenerator = new SpaceInvaderAnimation();
-    private final BigEndianBitOutputStream stream         = new BigEndianBitOutputStream(new ByteArrayOutputStream());
-
     public static final  int                                  PICTURE_WIDTH                = 352;
     public static final  int                                  PICTURE_HEIGHT               = 288;
     private static final int                                  GOB_ROWS                     = 6;
@@ -45,6 +42,10 @@ public class H261Encoder {
             {21, 34, 37, 47, 50, 56, 59, 61},
             {35, 36, 48, 49, 57, 58, 62, 63}
     };
+
+    private final UdpStreamer           udpStreamer;
+    private final SpaceInvaderAnimation frameGenerator = new SpaceInvaderAnimation();
+    private final BigEndianBitOutputStream stream = new BigEndianBitOutputStream(new ByteArrayOutputStream());
 
     static {
 
@@ -91,8 +92,6 @@ public class H261Encoder {
         VLC_TABLE_MACROBLOCK_ADDRESS.put(33, new Pair<>(0b0000_0011_000, 11));
     }
 
-    private final UdpStreamer udpStreamer;
-
     public H261Encoder () throws SocketException {
 
         // Start the UDP streamer
@@ -113,57 +112,64 @@ public class H261Encoder {
 
         int temporalReferenceCount = 0; // 0 - 31, increment for every Picture
 
-        while (true) {
+        try {
 
-            if (temporalReferenceCount == 32) {
+            while (true) {
 
-                temporalReferenceCount = 0;
-            }
+                if (temporalReferenceCount == 32) {
 
-            int[][][] yCbCrMatrix = rgbToYCbCr(this.frameGenerator.generateFrame());
-
-            for (int i = 0; i < GOB_ROWS; i++) {
-
-                for (int j = 0; j < GOB_COLUMNS; j++) {
-
-                    sendH261PacketToQueue(temporalReferenceCount, i, j, yCbCrMatrix);
+                    temporalReferenceCount = 0;
                 }
+
+                int[][][] yCbCrMatrix = rgbToYCbCr(this.frameGenerator.generateFrame());
+
+                writeH261Header();
+
+                for (int i = 0; i < GOB_ROWS; i++) {
+
+                    if (i == 0) { // Only write picture header for the first GOB
+
+                        this.writePictureHeader(temporalReferenceCount);
+                    }
+
+                    for (int j = 0; j < GOB_COLUMNS; j++) {
+
+                        this.writeGobHeader(i, j);
+
+                        for (int k = 0; k < MACROBLOCK_ROWS; k++) {
+
+                            for (int l = 0; l < MACROBLOCK_COLUMNS; l++) {
+
+                                this.writeMacroblockHeader(k, l);
+
+                                Pair<Integer, Integer> marcroblockStartRowAndColumn = this.getMarcroblockStartRowAndColumn(i, j, k, l);
+                                int[][][] blocks = toBlocks(
+                                        marcroblockStartRowAndColumn,
+                                        yCbCrMatrix
+                                );
+
+                                this.writeMacroblock(blocks);
+                            }
+                        }
+
+                        this.byteAlignStream();
+                        // Add packet to the Queue
+                        ByteArrayOutputStream baos = (ByteArrayOutputStream) this.stream.getOutputStream();
+                        this.udpStreamer.getPacketQueue().add(baos.toByteArray());
+                        // Reset the stream
+                        baos.reset();
+                    }
+                }
+
+                Thread.sleep(1); // ~30 fps: (1000 / 30) / 33 = 1 ms, 1 GOB per packet
+
+                temporalReferenceCount++;
             }
+        } finally {
 
-            Thread.sleep(1); // ~30 fps: (1000 / 30) / 33 = 1 ms, 1 GOB per packet
-
-            temporalReferenceCount++;
+            this.stream.getOutputStream().close();
+            this.stream.close();
         }
-    }
-
-    private void sendH261PacketToQueue (final int temporalReferenceCount, final int i, final int j, final int[][][] yCbCrMatrix) throws IOException {
-
-        writeH261Header();
-        this.writePictureHeader(temporalReferenceCount);
-        this.writeGobHeader(i, j);
-
-        for (int k = 0; k < MACROBLOCK_ROWS; k++) {
-
-            for (int l = 0; l < MACROBLOCK_COLUMNS; l++) {
-
-                this.writeMacroblockHeader(k, l);
-
-                Pair<Integer, Integer> marcroblockStartRowAndColumn = this.getMarcroblockStartRowAndColumn(i, j, k, l);
-                int[][][] blocks = toBlocks(
-                        marcroblockStartRowAndColumn,
-                        yCbCrMatrix
-                );
-
-                this.writeMacroblock(blocks);
-            }
-        }
-
-        this.byteAlignStream();
-        // Add packet to the Queue
-        ByteArrayOutputStream baos = (ByteArrayOutputStream) this.stream.getOutputStream();
-        this.udpStreamer.getPacketQueue().add(baos.toByteArray());
-        // Reset the stream
-        baos.reset();
     }
 
     private int[][][] rgbToYCbCr (BufferedImage image) {
@@ -431,7 +437,7 @@ public class H261Encoder {
             int headerFirstByte = byteArray[0];
             headerFirstByte =
                     (headerFirstByte & 0b1110_0011) // Clear EBIT
-                    | (bufferBitCount << 2); // and then set with bufferBigCount value
+                            | (bufferBitCount << 2); // and then set with bufferBigCount value
             byteArray[0] = (byte) headerFirstByte;
 
             return byteArray;

@@ -27,7 +27,6 @@ public class UdpStreamer extends Thread {
         log.info("Starting UDP streamer");
 
         try {
-
             while (true) {
 
                 try {
@@ -44,8 +43,6 @@ public class UdpStreamer extends Thread {
                 }
             }
         } finally {
-
-            log.info("Shutting down UDP streamer");
 
             socket.close();
         }
