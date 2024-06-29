@@ -43,9 +43,9 @@ public class H261Encoder {
             {35, 36, 48, 49, 57, 58, 62, 63}
     };
 
-    private final UdpStreamer           udpStreamer;
-    private final SpaceInvaderAnimation frameGenerator = new SpaceInvaderAnimation();
-    private final BigEndianBitOutputStream stream = new BigEndianBitOutputStream(new ByteArrayOutputStream());
+    private final UdpStreamer              udpStreamer;
+    private final SpaceInvaderAnimation    frameGenerator = new SpaceInvaderAnimation();
+    private final BigEndianBitOutputStream stream         = new BigEndianBitOutputStream(new ByteArrayOutputStream());
 
     static {
 
@@ -156,7 +156,7 @@ public class H261Encoder {
                         byte[] h261Packet = this.byteAlignStream();
                         this.udpStreamer.getPacketQueue().add(h261Packet);
                         // Reset the stream
-                        ((ByteArrayOutputStream)this.stream.getOutputStream()).reset();
+                        ((ByteArrayOutputStream) this.stream.getOutputStream()).reset();
                     }
                 }
 
@@ -431,7 +431,7 @@ public class H261Encoder {
             int headerFirstByte = byteArray[0];
             headerFirstByte =
                     (headerFirstByte & 0b1110_0011) // Clear EBIT
-                            | (numBits << 2); // and then set with bufferBigCount value
+                            | (numBits << 2); // and then set with numBits value
             byteArray[0] = (byte) headerFirstByte;
 
             return byteArray;
