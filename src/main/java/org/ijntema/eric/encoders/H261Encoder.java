@@ -174,7 +174,7 @@ public class H261Encoder {
                 // ~30 fps (spec: frame rate (i.e. 30000/1001 or approx. 29.97 Hz))
                 // Creating the packet also takes time, so the frame rate is not exactly 30 fps
                 // H.261 supports 176x144 and 352x288 frames at target frame rates of 7.5 to 30 fps
-                Thread.sleep(20);
+                Thread.sleep(1000/31);
 
                 temporalReferenceCount++;
 
@@ -238,7 +238,13 @@ public class H261Encoder {
         // 32 bits
         this.stream.write(0b0000_0000_0000_0001_0000, 20); // PSC (20 bits)
         this.stream.write(temporalReference, 5); // TR (5 bits)
-        this.stream.write(0b0010_1000, 6); // PTYPE (6 bits), 4th bit is CIF and 6th bit is Spare (Spares should be 1)
+        //        Bit 1 Split screen indicator, “0” off, “1” on;
+        //        Bit 2 Document camera indicator, “0” off, “1” on;
+        //        Bit 3 Freeze picture release, “0” off, “1” on;
+        //        Bit 4 Source format, “0” QCIF, “1” CIF;
+        //        Bit 5 Optional still image mode HI_RES defined in Annex D; “0” on, “1” off;
+        //        Bit 6 Spare.
+        this.stream.write(0b0000_0111, 6); // PTYPE (6 bits), bit 4, 5 and 6 are 1
         this.stream.write(0, 1); // PEI (1 bit)
     }
 
@@ -259,8 +265,9 @@ public class H261Encoder {
 
     private void writeMacroblockHeader (final int row, final int column) throws IOException {
 
+//        this.stream.write(1, 16); // MACROBLOCK start code (16 bits), not clear when this is needed
         int macroblockAddress = (row * MACROBLOCK_COLUMNS) + column + 1;
-        Pair<Integer, Integer> vlc = VLC_TABLE_MACROBLOCK_ADDRESS.get(macroblockAddress);
+//        Pair<Integer, Integer> vlc = VLC_TABLE_MACROBLOCK_ADDRESS.get(macroblockAddress);
 //        this.stream.write(vlc.getKey(), vlc.getValue()); // MACROBLOCK ADDRESS (variable length)
         this.stream.write(0b1, 1);
         this.stream.write(0b0001, 4); // MTYPE (4 bit)
@@ -386,19 +393,29 @@ public class H261Encoder {
 
     public int[][] quantize (double[][] matrix) {
 
-        int[][] quantizedBlocks = new int[BLOCK_SIZE][BLOCK_SIZE];
+        int[][] quantized = new int[BLOCK_SIZE][BLOCK_SIZE];
+        int scale = 31;
+
+        int DC_step_size = 8;
+        int AC_step_size = 2 * scale;
+
         for (int i = 0; i < BLOCK_SIZE; i++) {
 
             for (int j = 0; j < BLOCK_SIZE; j++) {
 
-                quantizedBlocks[i][j] =
-                        (int) Math.round(
-                                (matrix[i][j] + STEP_SIZE / 2) / STEP_SIZE // Simple linear quantization
-                        );
+                if (i == 0 && j == 0) {
+
+                    // Apply DC step size for the top-left element.
+                    quantized[i][j] = (int) Math.round(matrix[i][j] / DC_step_size);
+                } else {
+
+                    // Apply AC step size for the other elements.
+                    quantized[i][j] = (int) Math.round(matrix[i][j] / AC_step_size);
+                }
             }
         }
 
-        return quantizedBlocks;
+        return quantized;
     }
 
     public int[] zigzag (int[][] matrix) {
