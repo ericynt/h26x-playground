@@ -15,7 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.ijntema.eric.bitstream.BigEndianBitOutputStream;
 import org.ijntema.eric.frames.SpaceInvaderAnimation;
 import org.ijntema.eric.streamers.UdpStreamer;
-import org.ijntema.eric.utils.ByteUtil;
 
 @Slf4j
 public class H261Encoder {
@@ -34,16 +33,17 @@ public class H261Encoder {
     private static final int                                  TOTAL_BLOCKS                 = Y_BLOCKS_AMOUNT + CB_BLOCKS_AMOUNT + CR_BLOCKS_AMOUNT;
     private static final int                                  BLOCK_SIZE                   = 8;
     private static final Map<Integer, Pair<Integer, Integer>> VLC_TABLE_MACROBLOCK_ADDRESS = new HashMap<>();
-    private static final int[][]                              ZIGZAG_ORDER                 = {
-            {0, 1, 5, 6, 14, 15, 27, 28},
-            {2, 4, 7, 13, 16, 26, 29, 42},
-            {3, 8, 12, 17, 25, 30, 41, 43},
-            {9, 11, 18, 24, 31, 40, 44, 53},
-            {10, 19, 23, 32, 39, 45, 52, 54},
-            {20, 22, 33, 38, 46, 51, 55, 60},
-            {21, 34, 37, 47, 50, 56, 59, 61},
-            {35, 36, 48, 49, 57, 58, 62, 63}
-    };
+    private static final int[][]                              ZIGZAG_ORDER                 =
+            {
+                    {0, 1, 5, 6, 14, 15, 27, 28},
+                    {2, 4, 7, 13, 16, 26, 29, 42},
+                    {3, 8, 12, 17, 25, 30, 41, 43},
+                    {9, 11, 18, 24, 31, 40, 44, 53},
+                    {10, 19, 23, 32, 39, 45, 52, 54},
+                    {20, 22, 33, 38, 46, 51, 55, 60},
+                    {21, 34, 37, 47, 50, 56, 59, 61},
+                    {35, 36, 48, 49, 57, 58, 62, 63}
+            };
 
     private final UdpStreamer              udpStreamer;
     private final SpaceInvaderAnimation    frameGenerator = new SpaceInvaderAnimation();
@@ -471,9 +471,7 @@ public class H261Encoder {
 
             byte[] byteArray = ((ByteArrayOutputStream) this.stream.getOutputStream()).toByteArray();
             int headerFirstByte = byteArray[0];
-            headerFirstByte =
-                    (headerFirstByte & 0b1110_0011) // Clear EBIT
-                            | (numBits << 2); // and then set with numBits value
+            headerFirstByte = headerFirstByte | (numBits << 2); // Set with numBits value
             byteArray[0] = (byte) headerFirstByte;
 
             return byteArray;
