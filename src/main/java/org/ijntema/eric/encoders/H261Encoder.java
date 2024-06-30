@@ -28,7 +28,6 @@ public class H261Encoder {
     private static final int                                  Y_BLOCKS_AMOUNT              = 4;
     private static final int                                  CB_BLOCKS_AMOUNT             = 1;
     private static final int                                  CR_BLOCKS_AMOUNT             = 1;
-    private static final double                               STEP_SIZE                    = 8.0;
     // YCbCr 4:2:0
     private static final int                                  TOTAL_BLOCKS                 = Y_BLOCKS_AMOUNT + CB_BLOCKS_AMOUNT + CR_BLOCKS_AMOUNT;
     private static final int                                  BLOCK_SIZE                   = 8;
@@ -135,34 +134,11 @@ public class H261Encoder {
 
                             for (int l = 0; l < MACROBLOCK_COLUMNS; l++) {
 
-                                int gobN = (k == 0 && l == 0) ? 0 : (i * GOB_COLUMNS) + j + 1; // 2 - 12
-                                int mbap = (k == 0 && l == 0) ? 0 : (k * MACROBLOCK_COLUMNS) + l; // Not + 1 because it's the number of the previous MB, 1 - 32
-                                int quant = (k == 0 && l == 0) ? 0 : 1;
-                                this.writeH261Header(gobN, mbap, quant); // Every packet has a H261 Header
+                                createH261PacketBytes(i, j, k, l, temporalReferenceCount, yCbCrMatrix);
 
-                                if (i == 0 && j == 0 && k == 0 && l == 0) { // First packet for a Picture has a Picture Header
-
-                                    this.writePictureHeader(temporalReferenceCount);
-                                }
-
-                                if (k == 0 && l == 0) { // First Macroblock packet has a GOB Header
-
-                                    this.writeGobHeader(i, j);
-                                }
-
-                                this.writeMacroblockHeader(k, l);
-
-                                Pair<Integer, Integer> marcroblockStartRowAndColumn =
-                                        this.getMarcroblockStartRowAndColumn(i, j, k, l);
-                                int[][][] blocks = toBlocks(
-                                        marcroblockStartRowAndColumn,
-                                        yCbCrMatrix
-                                );
-
-                                this.writeMacroblock(blocks);
-
-                                byte[] h261Packet = this.byteAlignStream();
+                                byte[] h261Packet = ((ByteArrayOutputStream) this.stream.getOutputStream()).toByteArray();
                                 this.udpStreamer.getPacketQueue().add(h261Packet);
+
                                 // Reset the stream
                                 ((ByteArrayOutputStream) this.stream.getOutputStream()).reset();
                             }
@@ -206,6 +182,43 @@ public class H261Encoder {
         }
 
         return yCbCr;
+    }
+
+    private void createH261PacketBytes (
+            final int gobRow,
+            final int gobColumn,
+            final int macroblockRow,
+            final int macroblockColumn,
+            final int temporalReferenceCount,
+            final int[][][] yCbCrMatrix
+    ) throws IOException {
+
+        int gobN = (macroblockRow == 0 && macroblockColumn == 0) ? 0 : (gobRow * GOB_COLUMNS) + gobColumn + 1; // 2 - 12
+        int mbap = (macroblockRow == 0 && macroblockColumn == 0) ? 0 : (macroblockRow * MACROBLOCK_COLUMNS) + macroblockColumn; // Not + 1 because it's the number of the previous MB, 1 - 32
+        int quant = (macroblockRow == 0 && macroblockColumn == 0) ? 0 : 1;
+        this.writeH261Header(gobN, mbap, quant); // Every packet has a H261 Header
+
+        if (gobRow == 0 && gobColumn == 0 && macroblockRow == 0 && macroblockColumn == 0) { // First packet for a Picture has a Picture Header
+
+            this.writePictureHeader(temporalReferenceCount);
+        }
+
+        if (macroblockRow == 0 && macroblockColumn == 0) { // First Macroblock packet has a GOB Header
+
+            this.writeGobHeader(gobRow, gobColumn);
+        }
+
+        this.writeMacroblockHeader(macroblockRow, macroblockColumn);
+
+        Pair<Integer, Integer> marcroblockStartRowAndColumn =
+                this.getMarcroblockStartRowAndColumn(gobRow, gobColumn, macroblockRow, macroblockColumn);
+        int[][][] blocks = toBlocks(
+                marcroblockStartRowAndColumn,
+                yCbCrMatrix
+        );
+
+        this.writeMacroblock(blocks);
+        this.byteAlignStream();
     }
 
     private void writeH261Header (final int gobN, final int mbap, final int quant) throws IOException {
@@ -473,7 +486,7 @@ public class H261Encoder {
         this.stream.write(2, 2);
     }
 
-    private byte[] byteAlignStream () throws IOException {
+    private void byteAlignStream () throws IOException {
 
         int bufferBitCount = this.stream.getBufferBitCount();
         if (bufferBitCount > 0) {
@@ -481,20 +494,10 @@ public class H261Encoder {
             int numBits = 8 - bufferBitCount;
             this.stream.write(0, numBits); // Byte align
 
-            if (this.stream.getBufferBitCount() != 0) {
-
-                throw new RuntimeException("Stream is not byte aligned!");
-            }
-
             byte[] byteArray = ((ByteArrayOutputStream) this.stream.getOutputStream()).toByteArray();
             int headerFirstByte = byteArray[0];
             headerFirstByte = headerFirstByte | (numBits << 2); // Set with numBits value
             byteArray[0] = (byte) headerFirstByte;
-
-            return byteArray;
-        } else {
-
-            return ((ByteArrayOutputStream) this.stream.getOutputStream()).toByteArray();
         }
     }
 }
