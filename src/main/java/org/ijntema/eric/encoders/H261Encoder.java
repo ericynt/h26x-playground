@@ -243,7 +243,6 @@ public class H261Encoder {
 
     private void writeMacroblockHeader (final int row, final int column) throws IOException {
 
-
         int macroblockAddress = (row * MACROBLOCK_COLUMNS) + column + 1;
         Pair<Integer, Integer> vlc = VLC_TABLE_MACROBLOCK_ADDRESS.get(macroblockAddress);
 //        this.stream.write(vlc.getKey(), vlc.getValue()); // MACROBLOCK ADDRESS (variable length)
