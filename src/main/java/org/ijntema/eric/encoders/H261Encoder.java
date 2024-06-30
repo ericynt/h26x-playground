@@ -19,20 +19,21 @@ import org.ijntema.eric.streamers.UdpStreamer;
 @Slf4j
 public class H261Encoder {
 
-    public static final  int                                  PICTURE_WIDTH                = 352;
-    public static final  int                                  PICTURE_HEIGHT               = 288;
-    private static final int                                  GOB_ROWS                     = 6;
-    private static final int                                  GOB_COLUMNS                  = 2;
-    private static final int                                  MACROBLOCK_ROWS              = 3;
-    private static final int                                  MACROBLOCK_COLUMNS           = 11;
-    private static final int                                  Y_BLOCKS_AMOUNT              = 4;
-    private static final int                                  CB_BLOCKS_AMOUNT             = 1;
-    private static final int                                  CR_BLOCKS_AMOUNT             = 1;
+    public static final  int                                                PICTURE_WIDTH                = 352;
+    public static final  int                                                PICTURE_HEIGHT               = 288;
+    private static final int                                                GOB_ROWS                     = 6;
+    private static final int                                                GOB_COLUMNS                  = 2;
+    private static final int                                                MACROBLOCK_ROWS              = 3;
+    private static final int                                                MACROBLOCK_COLUMNS           = 11;
+    private static final int                                                Y_BLOCKS_AMOUNT              = 4;
+    private static final int                                                CB_BLOCKS_AMOUNT             = 1;
+    private static final int                                                CR_BLOCKS_AMOUNT             = 1;
     // YCbCr 4:2:0
-    private static final int                                  TOTAL_BLOCKS                 = Y_BLOCKS_AMOUNT + CB_BLOCKS_AMOUNT + CR_BLOCKS_AMOUNT;
-    private static final int                                  BLOCK_SIZE                   = 8;
-    private static final Map<Integer, Pair<Integer, Integer>> VLC_TABLE_MACROBLOCK_ADDRESS = new HashMap<>();
-    private static final int[][]                              ZIGZAG_ORDER                 =
+    private static final int                                                TOTAL_BLOCKS                 = Y_BLOCKS_AMOUNT + CB_BLOCKS_AMOUNT + CR_BLOCKS_AMOUNT;
+    private static final int                                                BLOCK_SIZE                   = 8;
+    private static final Map<Integer, Pair<Integer, Integer>>               VLC_TABLE_MACROBLOCK_ADDRESS = new HashMap<>();
+    private static final Map<Integer, Map<Integer, Pair<Integer, Integer>>> VLC_TABLE_TCOEFF             = new HashMap<>();
+    private static final int[][]                                            ZIGZAG_ORDER                 =
             {
                     {0, 1, 5, 6, 14, 15, 27, 28},
                     {2, 4, 7, 13, 16, 26, 29, 42},
@@ -93,6 +94,26 @@ public class H261Encoder {
         VLC_TABLE_MACROBLOCK_ADDRESS.put(31, new Pair<>(0b0000_0011_010, 11));
         VLC_TABLE_MACROBLOCK_ADDRESS.put(32, new Pair<>(0b0000_0011_001, 11));
         VLC_TABLE_MACROBLOCK_ADDRESS.put(33, new Pair<>(0b0000_0011_000, 11));
+
+
+        Map<Integer, Pair<Integer, Integer>> vlcTableTcoeff0 = new HashMap<>();
+        vlcTableTcoeff0.put(-1, new Pair<>(0b11, 2));
+        vlcTableTcoeff0.put(2, new Pair<>(0b0100, 4));
+        vlcTableTcoeff0.put(3, new Pair<>(0b0010_1, 5));
+        vlcTableTcoeff0.put(4, new Pair<>(0b0000_110, 7));
+        vlcTableTcoeff0.put(5, new Pair<>(0b0010_0110, 8));
+        vlcTableTcoeff0.put(-6, new Pair<>(0b0010_0001, 8));
+        vlcTableTcoeff0.put(7, new Pair<>(0b0000_0010_10, 10));
+        vlcTableTcoeff0.put(-8, new Pair<>(0b0000_0001_1101, 12));
+        vlcTableTcoeff0.put(9, new Pair<>(0b0000_0001_1000, 12));
+        vlcTableTcoeff0.put(-10, new Pair<>(0b0000_0001_0011, 12));
+        vlcTableTcoeff0.put(11, new Pair<>(0b0000_0001_0000, 12));
+        vlcTableTcoeff0.put(12, new Pair<>(0b0000_0000_1101_0, 13));
+        vlcTableTcoeff0.put(-13, new Pair<>(0b0000_0000_1100_1, 13));
+        vlcTableTcoeff0.put(14, new Pair<>(0b0000_0000_1100_0, 13));
+        vlcTableTcoeff0.put(-15, new Pair<>(0b0000_0000_1011_1, 13));
+
+        VLC_TABLE_TCOEFF.put(0, vlcTableTcoeff0);
     }
 
     public H261Encoder () throws SocketException {
@@ -150,7 +171,7 @@ public class H261Encoder {
                 // ~30 fps (spec: frame rate (i.e. 30000/1001 or approx. 29.97 Hz))
                 // Creating the packet also takes time, so the frame rate is not exactly 30 fps
                 // H.261 supports 176x144 and 352x288 frames at target frame rates of 7.5 to 30 fps
-                Thread.sleep(1000/31);
+                Thread.sleep(1000 / 31);
 
                 temporalReferenceCount++;
 
@@ -194,7 +215,8 @@ public class H261Encoder {
     ) throws IOException {
 
         int gobN = (macroblockRow == 0 && macroblockColumn == 0) ? 0 : (gobRow * GOB_COLUMNS) + gobColumn + 1; // 2 - 12
-        int mbap = (macroblockRow == 0 && macroblockColumn == 0) ? 0 : (macroblockRow * MACROBLOCK_COLUMNS) + macroblockColumn; // Not + 1 because it's the number of the previous MB, 1 - 32
+        int mbap = (macroblockRow == 0 && macroblockColumn == 0) ? 0 : (macroblockRow * MACROBLOCK_COLUMNS) +
+                macroblockColumn; // Not + 1 because it's the number of the previous MB, 1 - 32
         int quant = (macroblockRow == 0 && macroblockColumn == 0) ? 0 : 1;
         this.writeH261Header(gobN, mbap, quant); // Every packet has a H261 Header
 
@@ -476,8 +498,12 @@ public class H261Encoder {
         for (int i = 0; i < sequence.length; i += 2) {
 
             this.stream.write(0b0000_01, 6); // ESCAPE (6 bits)
-            this.stream.write(sequence[i], 6); // RUN (6 bits)
-            this.stream.write(sequence[i + 1], 8); // LEVEL (8 bits)
+
+            int run = sequence[i];
+            this.stream.write(run, 6); // RUN (6 bits)
+
+            int level = sequence[i + 1];
+            this.stream.write(level, 8); // LEVEL (8 bits)
         }
     }
 
