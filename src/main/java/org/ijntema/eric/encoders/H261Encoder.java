@@ -210,6 +210,12 @@ public class H261Encoder {
 
     private void writeH261Header (final int gobN, final int mbap, final int quant) throws IOException {
 
+        if (this.firstPicture) {
+
+            log.info("\n");
+            log.info("H261 Header");
+        }
+
         // 32 bits
         this.stream.write(0, 3); // SBIT (3 bits) 0 not used currently
         this.stream.write(0, 3); // EBIT (3 bits) Amount of bits at the end of the packet that the decoder should ignore, is updated after the packet is created
@@ -223,6 +229,11 @@ public class H261Encoder {
     }
 
     private void writePictureHeader (int temporalReference) throws IOException {
+
+        if (this.firstPicture) {
+
+            log.info("Picture Header");
+        }
 
         // 32 bits
         this.stream.write(0b0000_0000_0000_0001_0000, 20); // PSC (20 bits)
@@ -239,6 +250,11 @@ public class H261Encoder {
         this.stream.write(groupNumber, 4); // GN (4 bits)
         this.stream.write(1, 5); // GQUANT (5 bits)
         this.stream.write(0, 1); // GEI (1 bit)
+
+        if (this.firstPicture) {
+
+            log.info("GOB Header, nr: {}", groupNumber);
+        }
     }
 
     private void writeMacroblockHeader (final int row, final int column) throws IOException {
@@ -248,6 +264,11 @@ public class H261Encoder {
 //        this.stream.write(vlc.getKey(), vlc.getValue()); // MACROBLOCK ADDRESS (variable length)
         this.stream.write(0b1, 1);
         this.stream.write(0b0001, 4); // MTYPE (4 bit)
+
+        if (this.firstPicture) {
+
+            log.info("Macroblock Header, nr: {}", macroblockAddress);
+        }
     }
 
     private Pair<Integer, Integer> getMarcroblockStartRowAndColumn (
