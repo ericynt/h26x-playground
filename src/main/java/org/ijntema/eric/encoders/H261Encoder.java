@@ -1,5 +1,6 @@
 package org.ijntema.eric.encoders;
 
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -187,9 +188,10 @@ public class H261Encoder {
             for (int y = 0; y < PICTURE_HEIGHT; y++) {
 
                 int rgb = image.getRGB(x, y);
-                int r = (rgb >> 16) & 0xFF;
-                int g = (rgb >> 8) & 0xFF;
-                int b = rgb & 0xFF;
+                Color color = new Color(rgb);
+                int r = color.getRed();
+                int g = color.getGreen();
+                int b = color.getBlue();
                 yCbCr[x][y][0] = (int) (0.299 * r + 0.587 * g + 0.114 * b);
                 yCbCr[x][y][1] = (int) (-0.1687 * r - 0.3313 * g + 0.5 * b + 128);
                 yCbCr[x][y][2] = (int) (0.5 * r - 0.4187 * g - 0.0813 * b + 128);

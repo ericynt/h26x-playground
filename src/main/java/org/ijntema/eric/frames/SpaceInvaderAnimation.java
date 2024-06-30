@@ -54,7 +54,7 @@ public class SpaceInvaderAnimation extends JPanel implements Runnable {
     }
 
     private void drawBackground (Graphics g) {
-        g.setColor(Color.BLACK);
+        g.setColor(new Color(29, 29, 29));
         g.fillRect(0, 0, WIDTH, HEIGHT);
 
         // Draw layers with parallax effect
@@ -84,7 +84,7 @@ public class SpaceInvaderAnimation extends JPanel implements Runnable {
         int planetX = calculatePlanetXPosition(); // Calculate current X position of the planet
         int planetY = calculatePlanetYPosition(); // Calculate current Y position of the planet
 
-        g.setColor(new Color(0, 0, 128)); // Dark blue planet
+        g.setColor(new Color(75, 8, 25)); // Dark blue planet
         g.fillOval(planetX, planetY, 100, 100); // Draw planet
         g.setColor(Color.LIGHT_GRAY);
         g.fillOval(planetX + 30, planetY + 30, 10, 10); // Crater 1
