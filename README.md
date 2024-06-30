@@ -41,4 +41,4 @@ ffmpeg -stream_loop 10 -re -i "echo-hereweare.mp4" -f h264 "udp://localhost:9999
 ffmpeg -stream_loop 10 -re -i "page18-movie-4.3gp" -f h261 "udp://localhost:9999"
 
 # ffplay
-ffplay udp://127.0.0.1:9999 -loglevel debug
+ffplay udp://localhost:9999 -loglevel debug
