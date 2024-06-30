@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.ijntema.eric.bitstream.BigEndianBitOutputStream;
 import org.ijntema.eric.frames.SpaceInvaderAnimation;
 import org.ijntema.eric.streamers.UdpStreamer;
+import org.ijntema.eric.utils.ByteUtil;
 
 @Slf4j
 public class H261Encoder {
@@ -47,6 +48,8 @@ public class H261Encoder {
     private final UdpStreamer              udpStreamer;
     private final SpaceInvaderAnimation    frameGenerator = new SpaceInvaderAnimation();
     private final BigEndianBitOutputStream stream         = new BigEndianBitOutputStream(new ByteArrayOutputStream());
+
+    private boolean firstPicture = true;
 
     static {
 
@@ -134,7 +137,7 @@ public class H261Encoder {
 
                                 int gobN = (k == 0 && l == 0) ? 0 : (i * GOB_COLUMNS) + j + 1; // 2 - 12
                                 int mbap = (k == 0 && l == 0) ? 0 : (k * MACROBLOCK_COLUMNS) + l; // Not + 1 because it's the number of the previous MB, 1 - 32
-                                int quant = (k== 0 && l == 0) ? 0 : 1;
+                                int quant = (k == 0 && l == 0) ? 0 : 1;
                                 this.writeH261Header(gobN, mbap, quant); // Every packet has a H261 Header
 
                                 if (i == 0 && j == 0 && k == 0 && l == 0) { // First packet for a Picture has a Picture Header
@@ -168,10 +171,14 @@ public class H261Encoder {
                     }
                 }
 
-                Thread.sleep(20); // ~30 fps (spec: frame rate (i.e. 30000/1001 or approx. 29.97 Hz))
+                // ~30 fps (spec: frame rate (i.e. 30000/1001 or approx. 29.97 Hz))
                 // Creating the packet also takes time, so the frame rate is not exactly 30 fps
                 // H.261 supports 176x144 and 352x288 frames at target frame rates of 7.5 to 30 fp
+                Thread.sleep(20);
+
                 temporalReferenceCount++;
+
+                firstPicture = false;
             }
         } finally {
 
@@ -203,19 +210,21 @@ public class H261Encoder {
 
     private void writeH261Header (final int gobN, final int mbap, final int quant) throws IOException {
 
+        // 32 bits
         this.stream.write(0, 3); // SBIT (3 bits) 0 not used currently
         this.stream.write(0, 3); // EBIT (3 bits) Amount of bits at the end of the packet that the decoder should ignore, is updated after the packet is created
         this.stream.write(1, 1); // INTRA (1 bit)
         this.stream.write(0, 1); // MV flag (1 bit)
-        this.stream.write(gobN, 4); // GOBN (4 bits) Can be set to 0 because we always have a GOB header is the packet
-        this.stream.write(mbap, 5); // MBAP (5 bits) Set to 0 because we always have a GOB header is the packet
-        this.stream.write(quant, 5); // QUANT (5 bits) Set to 0 because we always have a GOB header is the packet
+        this.stream.write(gobN, 4); // GOBN (4 bits)
+        this.stream.write(mbap, 5); // MBAP (5 bits)
+        this.stream.write(quant, 5); // QUANT (5 bits)
         this.stream.write(0, 5); // HMVD (5 bits) Set to 0 because the MV flag is 0
         this.stream.write(0, 5); // VMVD (5 bits) Set to 0 because the MV flag is 0
     }
 
     private void writePictureHeader (int temporalReference) throws IOException {
 
+        // 32 bits
         this.stream.write(0b0000_0000_0000_0001_0000, 20); // PSC (20 bits)
         this.stream.write(temporalReference, 5); // TR (5 bits)
         this.stream.write(0b0010_1000, 6); // PTYPE (6 bits), 4th bit is CIF and 6th bit is Spare (Spares should be 1)
@@ -224,6 +233,7 @@ public class H261Encoder {
 
     private void writeGobHeader (final int row, final int column) throws IOException {
 
+        // 26 bits
         this.stream.write(1, 16); // GOB start code (16 bits)
         int groupNumber = (row * GOB_COLUMNS) + column + 1; // 1 - 12
         this.stream.write(groupNumber, 4); // GN (4 bits)
@@ -233,9 +243,11 @@ public class H261Encoder {
 
     private void writeMacroblockHeader (final int row, final int column) throws IOException {
 
+
         int macroblockAddress = (row * MACROBLOCK_COLUMNS) + column + 1;
         Pair<Integer, Integer> vlc = VLC_TABLE_MACROBLOCK_ADDRESS.get(macroblockAddress);
-        this.stream.write(vlc.getKey(), vlc.getValue()); // MACROBLOCK ADDRESS (variable length)
+//        this.stream.write(vlc.getKey(), vlc.getValue()); // MACROBLOCK ADDRESS (variable length)
+        this.stream.write(0b1, 1);
         this.stream.write(0b0001, 4); // MTYPE (4 bit)
     }
 

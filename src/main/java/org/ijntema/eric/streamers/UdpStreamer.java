@@ -32,7 +32,7 @@ public class UdpStreamer extends Thread {
                 try {
 
                     byte[] bytes = this.packetQueue.take(); // blocks until new data is available
-                    InetAddress sendHost = InetAddress.getByName("localhost");
+                    InetAddress sendHost = InetAddress.getLoopbackAddress();
                     int sendPort = 55555;
                     DatagramPacket packet = new DatagramPacket(bytes, bytes.length, sendHost, sendPort);
 

@@ -10,4 +10,9 @@ public class ByteUtil {
 
         return result;
     }
+
+    public static String toString (byte b) {
+
+        return String.format("%8s", Integer.toBinaryString(b & 0xFF)).replace(' ', '0');
+    }
 }
