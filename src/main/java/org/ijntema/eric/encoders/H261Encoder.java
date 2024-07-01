@@ -6,115 +6,36 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.SocketException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import javafx.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.ijntema.eric.bitstream.BigEndianBitOutputStream;
+import org.ijntema.eric.constants.H261Constants;
 import org.ijntema.eric.frames.SpaceInvaderAnimation;
 import org.ijntema.eric.streamers.UdpStreamer;
+
+import static org.ijntema.eric.constants.H261Constants.BLOCK_SIZE;
+import static org.ijntema.eric.constants.H261Constants.GOB_COLUMNS;
+import static org.ijntema.eric.constants.H261Constants.GOB_ROWS;
+import static org.ijntema.eric.constants.H261Constants.MACROBLOCK_COLUMNS;
+import static org.ijntema.eric.constants.H261Constants.MACROBLOCK_ROWS;
+import static org.ijntema.eric.constants.H261Constants.PICTURE_HEIGHT;
+import static org.ijntema.eric.constants.H261Constants.PICTURE_WIDTH;
+import static org.ijntema.eric.constants.H261Constants.TOTAL_BLOCKS;
+import static org.ijntema.eric.constants.H261Constants.VLC_TABLE_TCOEFF;
+import static org.ijntema.eric.constants.H261Constants.ZIGZAG_ORDER;
 
 @Slf4j
 public class H261Encoder {
 
-    public static final  int                                                PICTURE_WIDTH                = 352;
-    public static final  int                                                PICTURE_HEIGHT               = 288;
-    private static final int                                                GOB_ROWS                     = 6;
-    private static final int                                                GOB_COLUMNS                  = 2;
-    private static final int                                                MACROBLOCK_ROWS              = 3;
-    private static final int                                                MACROBLOCK_COLUMNS           = 11;
-    private static final int                                                Y_BLOCKS_AMOUNT              = 4;
-    private static final int                                                CB_BLOCKS_AMOUNT             = 1;
-    private static final int                                                CR_BLOCKS_AMOUNT             = 1;
-    // YCbCr 4:2:0
-    private static final int                                                TOTAL_BLOCKS                 = Y_BLOCKS_AMOUNT + CB_BLOCKS_AMOUNT + CR_BLOCKS_AMOUNT;
-    private static final int                                                BLOCK_SIZE                   = 8;
-    private static final Map<Integer, Pair<Integer, Integer>>               VLC_TABLE_MACROBLOCK_ADDRESS = new HashMap<>();
-    private static final Map<Integer, Map<Integer, Pair<Integer, Integer>>> VLC_TABLE_TCOEFF             = new HashMap<>();
-    private static final int[][]                                            ZIGZAG_ORDER                 =
-            {
-                    {0, 1, 5, 6, 14, 15, 27, 28},
-                    {2, 4, 7, 13, 16, 26, 29, 42},
-                    {3, 8, 12, 17, 25, 30, 41, 43},
-                    {9, 11, 18, 24, 31, 40, 44, 53},
-                    {10, 19, 23, 32, 39, 45, 52, 54},
-                    {20, 22, 33, 38, 46, 51, 55, 60},
-                    {21, 34, 37, 47, 50, 56, 59, 61},
-                    {35, 36, 48, 49, 57, 58, 62, 63}
-            };
 
     private final UdpStreamer              udpStreamer;
     private final SpaceInvaderAnimation    frameGenerator = new SpaceInvaderAnimation();
     private final BigEndianBitOutputStream stream         = new BigEndianBitOutputStream(new ByteArrayOutputStream());
 
     private boolean firstPicture = true;
-
-    static {
-
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(1, new Pair<>(0b1, 1));
-
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(2, new Pair<>(0b011, 3));
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(3, new Pair<>(0b010, 3));
-
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(4, new Pair<>(0b011, 4));
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(5, new Pair<>(0b010, 4));
-
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(6, new Pair<>(0b00011, 5));
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(7, new Pair<>(0b00010, 5));
-
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(8, new Pair<>(0b0000_111, 7));
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(9, new Pair<>(0b0000_110, 7));
-
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(10, new Pair<>(0b0000_1011, 8));
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(11, new Pair<>(0b0000_1010, 8));
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(12, new Pair<>(0b0000_1001, 8));
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(13, new Pair<>(0b0000_1000, 8));
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(14, new Pair<>(0b0000_0111, 8));
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(15, new Pair<>(0b0000_0110, 8));
-
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(16, new Pair<>(0b0000_0101_11, 10));
-
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(17, new Pair<>(0b0000_0101_10, 10));
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(18, new Pair<>(0b0000_0101_01, 10));
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(19, new Pair<>(0b0000_0101_00, 10));
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(20, new Pair<>(0b0000_0100_11, 10));
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(21, new Pair<>(0b0000_0100_10, 10));
-
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(22, new Pair<>(0b0000_0100_011, 11));
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(23, new Pair<>(0b0000_0100_010, 11));
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(24, new Pair<>(0b0000_0100_001, 11));
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(25, new Pair<>(0b0000_0100_000, 11));
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(26, new Pair<>(0b0000_0011_111, 11));
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(27, new Pair<>(0b0000_0011_110, 11));
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(28, new Pair<>(0b0000_0011_101, 11));
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(29, new Pair<>(0b0000_0011_100, 11));
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(30, new Pair<>(0b0000_0011_011, 11));
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(31, new Pair<>(0b0000_0011_010, 11));
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(32, new Pair<>(0b0000_0011_001, 11));
-        VLC_TABLE_MACROBLOCK_ADDRESS.put(33, new Pair<>(0b0000_0011_000, 11));
-
-
-        Map<Integer, Pair<Integer, Integer>> vlcTableTcoeff0 = new HashMap<>();
-        vlcTableTcoeff0.put(-1, new Pair<>(0b11, 2));
-        vlcTableTcoeff0.put(2, new Pair<>(0b0100, 4));
-        vlcTableTcoeff0.put(3, new Pair<>(0b0010_1, 5));
-        vlcTableTcoeff0.put(4, new Pair<>(0b0000_110, 7));
-        vlcTableTcoeff0.put(5, new Pair<>(0b0010_0110, 8));
-        vlcTableTcoeff0.put(-6, new Pair<>(0b0010_0001, 8));
-        vlcTableTcoeff0.put(7, new Pair<>(0b0000_0010_10, 10));
-        vlcTableTcoeff0.put(-8, new Pair<>(0b0000_0001_1101, 12));
-        vlcTableTcoeff0.put(9, new Pair<>(0b0000_0001_1000, 12));
-        vlcTableTcoeff0.put(-10, new Pair<>(0b0000_0001_0011, 12));
-        vlcTableTcoeff0.put(11, new Pair<>(0b0000_0001_0000, 12));
-        vlcTableTcoeff0.put(12, new Pair<>(0b0000_0000_1101_0, 13));
-        vlcTableTcoeff0.put(-13, new Pair<>(0b0000_0000_1100_1, 13));
-        vlcTableTcoeff0.put(14, new Pair<>(0b0000_0000_1100_0, 13));
-        vlcTableTcoeff0.put(-15, new Pair<>(0b0000_0000_1011_1, 13));
-
-        VLC_TABLE_TCOEFF.put(0, vlcTableTcoeff0);
-    }
 
     public H261Encoder () throws SocketException {
 
@@ -497,13 +418,27 @@ public class H261Encoder {
 
         for (int i = 0; i < sequence.length; i += 2) {
 
-            this.stream.write(0b0000_01, 6); // ESCAPE (6 bits)
-
             int run = sequence[i];
-            this.stream.write(run, 6); // RUN (6 bits)
-
             int level = sequence[i + 1];
-            this.stream.write(level, 8); // LEVEL (8 bits)
+
+            boolean foundInVlcTable = false;
+            Map<Integer, Pair<Integer, Integer>> runMap = VLC_TABLE_TCOEFF.get(run);
+            if (runMap != null && i != 0) { // Not for the first coefficient in the block
+
+                Pair<Integer, Integer> levelMap = runMap.get(level);
+                if (levelMap != null) {
+
+                    foundInVlcTable = true;
+                    this.stream.write(levelMap.getKey(), levelMap.getValue());
+                }
+            }
+
+            if (!foundInVlcTable) {
+
+                this.stream.write(0b0000_01, 6); // ESCAPE (6 bits)
+                this.stream.write(run, 6); // RUN (6 bits)
+                this.stream.write(level, 8); // LEVEL (8 bits)
+            }
         }
     }
 

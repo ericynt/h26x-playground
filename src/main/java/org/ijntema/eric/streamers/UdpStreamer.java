@@ -19,7 +19,7 @@ public class UdpStreamer extends Thread {
 
     public UdpStreamer () throws SocketException {
 
-        socket = new DatagramSocket(55554);
+        socket = new DatagramSocket(); // Create Socket with random port
     }
 
     public void run () {
