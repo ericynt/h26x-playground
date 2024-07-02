@@ -131,12 +131,14 @@ public class H261Encoder {
             final int[][][] yCbCrMatrix
     ) throws IOException {
 
-        if (gobRow == 0 && gobColumn == 0 && macroblockRow == 0 && macroblockColumn == 0) { // First packet for a Picture has a Picture Header
+        // Add a Picture Header if it's the first packet of the Picture
+        if (gobRow == 0 && gobColumn == 0 && macroblockRow == 0 && macroblockColumn == 0) {
 
             this.writePictureHeader(temporalReferenceCount);
         }
 
-        if (macroblockRow == 0 && macroblockColumn == 0) { // First Macroblock packet has a GOB Header
+        // Add a GOB Header if it's a packet for the first macroblok in a GOB
+        if (macroblockRow == 0 && macroblockColumn == 0) {
 
             this.writeGobHeader(gobRow, gobColumn);
         }
@@ -148,6 +150,7 @@ public class H261Encoder {
                 yCbCrMatrix
         );
 
+        // Every macroblok is sent in a separate packet
         this.writeMacroblockHeader(macroblockRow, macroblockColumn);
         this.writeMacroblock(blocks);
     }
@@ -172,11 +175,15 @@ public class H261Encoder {
     private void writeGobHeader (final int row, final int column) throws IOException {
 
         // 26 bits
-        this.stream.write(1, 16); // GOB start code (16 bits)
-        int groupNumber = (row * GOB_COLUMNS) + column + 1; // 1 - 12
-        this.stream.write(groupNumber, 4); // GN (4 bits)
-        this.stream.write(QUANT, 5); // GQUANT (5 bits)
-        this.stream.write(0, 1); // GEI (1 bit)
+        // GOB start code (16 bits)
+        this.stream.write(1, 16);
+        // GN 1 - 12 (4 bits)
+        int groupNumber = (row * GOB_COLUMNS) + column + 1;
+        this.stream.write(groupNumber, 4);
+        // GQUANT (5 bits)
+        this.stream.write(QUANT, 5);
+        // GEI (1 bit)
+        this.stream.write(0, 1);
     }
 
     private void writeMacroblockHeader (final int row, final int column) throws IOException {
@@ -185,8 +192,10 @@ public class H261Encoder {
         // int macroblockAddress = (row * MACROBLOCK_COLUMNS) + column + 1;
         // Pair<Integer, Integer> vlc = VLC_TABLE_MACROBLOCK_ADDRESS.get(macroblockAddress);
         //  this.stream.write(vlc.getKey(), vlc.getValue()); // MACROBLOCK ADDRESS (variable length)
-        this.stream.write(0b1, 1); // This sort of works as long as all the packets arrive in order
-        this.stream.write(0b0001, 4); // MTYPE (4 bit)
+        // This sort of works as long as all the packets arrive in order
+        this.stream.write(0b1, 1);
+        // MTYPE (4 bit)
+        this.stream.write(0b0001, 4);
     }
 
     private Pair<Integer, Integer> getMarcroblockStartRowAndColumn (
@@ -208,6 +217,7 @@ public class H261Encoder {
     ) {
 
         // YCbCr 4:4:4 to 4:2:0
+        // and transform 16x16x3 to 6x8x8 (4 Y, 1 Cb, 1 Cr)
 
         int[][][] blocks = new int[TOTAL_BLOCKS][BLOCK_SIZE][BLOCK_SIZE];
         int[][] cbAccumulators = new int[BLOCK_SIZE][BLOCK_SIZE];
@@ -224,16 +234,20 @@ public class H261Encoder {
                 // Y component
                 if (x < 8 && y < 8) {
 
-                    blocks[2][x][y] = yCbCr[i][j][0]; // Bottom left
+                    // Bottom left
+                    blocks[2][x][y] = yCbCr[i][j][0];
                 } else if (x < 8) {
 
-                    blocks[0][x][y - 8] = yCbCr[i][j][0]; // Top left
+                    // Top left
+                    blocks[0][x][y - 8] = yCbCr[i][j][0];
                 } else if (y < 8) {
 
-                    blocks[3][x - 8][y] = yCbCr[i][j][0]; // Bottom right
+                    // Bottom right
+                    blocks[3][x - 8][y] = yCbCr[i][j][0];
                 } else {
 
-                    blocks[1][x - 8][y - 8] = yCbCr[i][j][0]; // Top right
+                    // Top right
+                    blocks[1][x - 8][y - 8] = yCbCr[i][j][0];
                 }
 
                 // Cb and Cr components
@@ -286,18 +300,24 @@ public class H261Encoder {
         double ci, cj, dct, sum;
 
         for (i = 0; i < m; i++) {
+
             for (j = 0; j < n; j++) {
+
                 // ci and cj depends on frequency as well as
                 // number of row and columns of specified matrix
                 if (i == 0) {
+
                     ci = 1 / Math.sqrt(m);
                 } else {
+
                     ci = Math.sqrt(2) / Math.sqrt(m);
                 }
 
                 if (j == 0) {
+
                     cj = 1 / Math.sqrt(n);
                 } else {
+
                     cj = Math.sqrt(2) / Math.sqrt(n);
                 }
 
@@ -305,7 +325,9 @@ public class H261Encoder {
                 // cosine signals
                 sum = 0;
                 for (k = 0; k < m; k++) {
+
                     for (l = 0; l < n; l++) {
+
                         dct = matrix[k][l] *
                                 Math.cos((2 * k + 1) * i * pi / (2 * m)) *
                                 Math.cos((2 * l + 1) * j * pi / (2 * n));
@@ -414,7 +436,8 @@ public class H261Encoder {
             int run = sequence[i];
             int level = sequence[i + 1];
 
-            if (i == 0) { // DC
+            // DC
+            if (i == 0) {
 
                 if (level > 254) {
 
