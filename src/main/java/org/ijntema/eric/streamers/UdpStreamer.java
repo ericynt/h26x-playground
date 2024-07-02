@@ -19,7 +19,8 @@ public class UdpStreamer extends Thread {
 
     public UdpStreamer () throws SocketException {
 
-        socket = new DatagramSocket(); // Create Socket with random port
+        // Create Socket with random port
+        socket = new DatagramSocket();
     }
 
     public void run () {
@@ -31,7 +32,8 @@ public class UdpStreamer extends Thread {
 
                 try {
 
-                    byte[] bytes = this.packetQueue.take(); // blocks until new data is available
+                    // Blocks until new data is available
+                    byte[] bytes = this.packetQueue.take();
                     InetAddress sendHost = InetAddress.getLoopbackAddress();
                     int sendPort = 55555;
                     DatagramPacket packet = new DatagramPacket(bytes, bytes.length, sendHost, sendPort);

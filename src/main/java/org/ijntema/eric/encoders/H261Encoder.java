@@ -50,6 +50,8 @@ public class H261Encoder {
 
     public void encode () throws IOException, InterruptedException {
 
+        // Only created I-frames at the moment
+
         int temporalReferenceCount = 0; // 0 - 31, increment for every Picture
 
         try {
@@ -152,15 +154,17 @@ public class H261Encoder {
     private void writePictureHeader (int temporalReference) throws IOException {
 
         // 32 bits
-        this.stream.write(0b0000_0000_0000_0001_0000, 20); // PSC (20 bits)
+        // PSC (20 bits)
+        this.stream.write(0b0000_0000_0000_0001_0000, 20);
         this.stream.write(temporalReference, 5); // TR (5 bits)
-        //        Bit 1 Split screen indicator, “0” off, “1” on;
-        //        Bit 2 Document camera indicator, “0” off, “1” on;
-        //        Bit 3 Freeze picture release, “0” off, “1” on;
-        //        Bit 4 Source format, “0” QCIF, “1” CIF;
-        //        Bit 5 Optional still image mode HI_RES defined in Annex D; “0” on, “1” off;
-        //        Bit 6 Spare.
-        this.stream.write(0b0000_0111, 6); // PTYPE (6 bits), bit 4, 5 and 6 are 1
+        // Bit 1 Split screen indicator, “0” off, “1” on;
+        // Bit 2 Document camera indicator, “0” off, “1” on;
+        // Bit 3 Freeze picture release, “0” off, “1” on;
+        // Bit 4 Source format, “0” QCIF, “1” CIF;
+        // Bit 5 Optional still image mode HI_RES defined in Annex D; “0” on, “1” off;
+        // Bit 6 Spare.
+        // PTYPE (6 bits), bit 4, 5 and 6 are 1
+        this.stream.write(0b0000_0111, 6);
         this.stream.write(0, 1); // PEI (1 bit)
     }
 
@@ -176,11 +180,11 @@ public class H261Encoder {
 
     private void writeMacroblockHeader (final int row, final int column) throws IOException {
 
-//        this.stream.write(1, 16); // MACROBLOCK start code (16 bits), not clear when this is needed
-        int macroblockAddress = (row * MACROBLOCK_COLUMNS) + column + 1;
-//        Pair<Integer, Integer> vlc = VLC_TABLE_MACROBLOCK_ADDRESS.get(macroblockAddress);
-//        this.stream.write(vlc.getKey(), vlc.getValue()); // MACROBLOCK ADDRESS (variable length)
-        this.stream.write(0b1, 1);
+        // this.stream.write(1, 16); // MACROBLOCK start code (16 bits), not clear when this is needed
+        // int macroblockAddress = (row * MACROBLOCK_COLUMNS) + column + 1;
+        // Pair<Integer, Integer> vlc = VLC_TABLE_MACROBLOCK_ADDRESS.get(macroblockAddress);
+        //  this.stream.write(vlc.getKey(), vlc.getValue()); // MACROBLOCK ADDRESS (variable length)
+        this.stream.write(0b1, 1); // This sort of works as long as all the packets arrive in order
         this.stream.write(0b0001, 4); // MTYPE (4 bit)
     }
 
@@ -201,6 +205,8 @@ public class H261Encoder {
             final Pair<Integer, Integer> pixelRowAndColumn,
             final int[][][] yCbCr
     ) {
+
+        // YCbCr 4:4:4 to 4:2:0
 
         int[][][] blocks = new int[TOTAL_BLOCKS][BLOCK_SIZE][BLOCK_SIZE];
         int[][] cbAccumulators = new int[BLOCK_SIZE][BLOCK_SIZE];
@@ -325,8 +331,9 @@ public class H261Encoder {
                 if (i == 0 && j == 0) {
 
                     // Apply DC step size for the top-left element.
+                    // Not sure if ronding up or down is better
                     quantized[i][j] = (int) Math.round((matrix[i][j] / DC_step_size));
-//                    quantized[i][j] = (int) matrix[i][j] / DC_step_size;
+                    //  quantized[i][j] = (int) matrix[i][j] / DC_step_size;
                 } else {
 
                     // rec = quant * (2 * level + 1); level > 0
@@ -342,11 +349,13 @@ public class H261Encoder {
                     double coeff = matrix[i][j];
                     if (coeff < 0) {
 
-//                        quantized[i][j] = (int) (((coeff) / QUANT) + 1) / 2;
+                        // quantized[i][j] = (int) (((coeff) / QUANT) + 1) / 2;
+                        // Not sure if ronding up or down is better
                         quantized[i][j] = (int) Math.round((((coeff) / QUANT) + 1) / 2);
                     } else {
 
-//                        quantized[i][j] = (int) (((coeff) / QUANT) - 1) / 2;
+                        // quantized[i][j] = (int) (((coeff) / QUANT) - 1) / 2;
+                        // Not sure if ronding up or down is better
                         quantized[i][j] = (int) Math.round((((coeff) / QUANT) - 1) / 2);
                     }
                 }
@@ -384,7 +393,8 @@ public class H261Encoder {
 
                 encoded.add(run);
                 encoded.add(value);
-                run = 0; // Reset the run count after a non-zero value
+                // Reset the run count after a non-zero value
+                run = 0;
             }
         }
 
