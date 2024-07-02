@@ -17,8 +17,7 @@
       - huffman encoding
 - serving data
   - put H.261 block coefficients into H.261 packets
-  - put H.261 packets into RTP packets
-  - serve RTP packets in UDP datagrams
+  - serve H.261 packets in UDP datagrams
 
 # Notes
 - keep constant bitrate according to H.261 standard
@@ -31,7 +30,7 @@
 - print network debug information in every frame
 
 # Future
-- Look into RTCP and RTSP
+- Look into RTP, RTCP and RTSP
 - Look into MPEG-TS
 - H.264 support
 
