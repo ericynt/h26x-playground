@@ -130,11 +130,11 @@ public class H261Encoder {
             final int[][][] yCbCrMatrix
     ) throws IOException {
 
-        int gobN = (macroblockRow == 0 && macroblockColumn == 0) ? 0 : (gobRow * GOB_COLUMNS) + gobColumn + 1; // 2 - 12
-        int mbap = (macroblockRow == 0 && macroblockColumn == 0) ? 0 : (macroblockRow * MACROBLOCK_COLUMNS) +
-                macroblockColumn; // Not + 1 because it's the number of the previous MB, 1 - 32
-        int quant = (macroblockRow == 0 && macroblockColumn == 0) ? 0 : QUANT;
-        this.writeH261Header(gobN, mbap, quant); // Every packet has a H261 Header
+//        int gobN = (macroblockRow == 0 && macroblockColumn == 0) ? 0 : (gobRow * GOB_COLUMNS) + gobColumn + 1; // 2 - 12
+//        int mbap = (macroblockRow == 0 && macroblockColumn == 0) ? 0 : (macroblockRow * MACROBLOCK_COLUMNS) +
+//                macroblockColumn; // Not + 1 because it's the number of the previous MB, 1 - 32
+//        int quant = (macroblockRow == 0 && macroblockColumn == 0) ? 0 : QUANT;
+//        this.writeH261Header(gobN, mbap, quant); // Every packet has a H261 Header
 
         if (gobRow == 0 && gobColumn == 0 && macroblockRow == 0 && macroblockColumn == 0) { // First packet for a Picture has a Picture Header
 

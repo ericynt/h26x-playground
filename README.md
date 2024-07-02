@@ -36,10 +36,9 @@
 - H.264 support
 
 # ffmpeg
-ffmpeg -stream_loop 10 -re -i "echo-hereweare.mp4" -f mpegts "udp://localhost:9999"
-ffmpeg -stream_loop 10 -re -i "echo-hereweare.mp4" -f h264 "udp://localhost:9999"
-ffmpeg -stream_loop 10 -re -i "page18-movie-4.3gp" -f h261 "udp://localhost:9999"
+ffmpeg -stream_loop 10 -re -i "echo-hereweare.mp4" -f mpegts "udp://127.0.0.1:55555"
+ffmpeg -stream_loop 10 -re -i "echo-hereweare.mp4" -f h264 "udp://127.0.0.1:55555"
+ffmpeg -stream_loop 10 -re -i "page18-movie-4.3gp" -f h261 "udp://127.0.0.1:55555"
 
 # ffplay
-ffplay udp://localhost:9999 -loglevel debug
 ffplay udp://127.0.0.1:55555 -loglevel debug

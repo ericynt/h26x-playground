@@ -8,35 +8,35 @@ import java.util.Random;
 
 public class SpaceInvaderAnimation extends JPanel implements Runnable {
 
-    private static final int             WIDTH               = 352;
-    private static final int             HEIGHT              = 288;
-    private static final int             FRAME_RATE          = 30;
-    private static final int             INVADER_WIDTH       = 40;
-    private static final int             INVADER_HEIGHT      = 30;
-    private static final int             INVADER_STEP        = 5;
-    private static final int             STAR_COUNT          = 25;
-    private static final int             TWINKLE_RATE        = 50;
-    private static final int             LAYER_COUNT         = 3;
-    private static final Color           PLANET_COLOR        = new Color(8, 36, 94);
-    private static final Color           CRATERS_COLOR       = Color.LIGHT_GRAY;
-    private static final Color           SPACE_INVADER_COLOR = Color.GREEN;
-    private static final Color           BACKGROUND_COLOR    = new Color(33, 28, 28);
-    private              int             invaderX            = 0;
-    private              int             invaderY            = HEIGHT / 2 - INVADER_HEIGHT / 2;
-    private              int             directionX          = 1; // 1 for right, -1 for left
-    private              int             directionY          = 0; // 1 for down, -1 for up, 0 for no vertical movement
-    private              int             animationFrame      = 0;
-    private static final int             NUM_FRAMES          = 2;
-    private              Random          random              = new Random();
-    private              ArrayList<Star> stars               = new ArrayList<>();
-    private              int             twinkleCounter      = 0;
-    private              int[]           layerOffsets        = new int[LAYER_COUNT];
-    private              int[]           layerSpeeds         = {1, 2, 3}; // Different speeds for each layer
-    private              int             planetStartX        = 100; // Starting X position of the planet (fixed)
-    private              int             planetY             = 100; // Y position of the planet (fixed)
-    private              double          orbitRadius         = 100.0; // Radius of the circular orbit
-    private              double          orbitSpeed          = 0.01; // Speed of orbit in radians per frame
-    private              double          currentAngle        = 0.0; // Current angle in radians
+    private static final int WIDTH          = 352;
+    private static final int HEIGHT         = 288;
+    private static final int FRAME_RATE     = 30;
+    private static final int INVADER_WIDTH  = 40;
+    private static final int INVADER_HEIGHT = 30;
+    private static final int INVADER_STEP   = 5;
+    private static final int STAR_COUNT     = 25;
+    private static final int TWINKLE_RATE   = 50;
+    private static final int LAYER_COUNT    = 3;
+    private static final int NUM_FRAMES     = 2;
+    private static final Color SPACE_INVADER_COLOR = Color.GREEN;
+    private static final Color PLANET_COLOR = new Color(8, 36, 94);
+    private static final Color CRATERS_COLOR = Color.LIGHT_GRAY;
+    private static final Color BACKGROUND_COLOR = new Color(29, 29, 29);
+
+    private int    invaderX       = 0;
+    private int    invaderY       = HEIGHT / 2 - INVADER_HEIGHT / 2;
+    private int    directionX     = 1; // 1 for right, -1 for left
+    private int    directionY     = 0; // 1 for down, -1 for up, 0 for no vertical movement
+    private int    animationFrame = 0;
+    private int    twinkleCounter = 0;
+    private double currentAngle   = 0.0; // Current angle in radians
+
+    private final Random          random       = new Random();
+    private final ArrayList<Star> stars        = new ArrayList<>();
+    private final int[]           layerOffsets = new int[LAYER_COUNT];
+    private final int[]           layerSpeeds  = {1, 2, 3}; // Different speeds for each layer
+    private final double          orbitRadius  = 100.0; // Radius of the circular orbit
+    private       double          orbitSpeed   = 0.01; // Speed of orbit in radians per frame
 
     public SpaceInvaderAnimation () {
 
@@ -70,7 +70,6 @@ public class SpaceInvaderAnimation extends JPanel implements Runnable {
 
         // Draw layers with parallax effect
         for (int layer = 0; layer < LAYER_COUNT; layer++) {
-
             drawLayer(g, layer);
         }
 
@@ -87,7 +86,6 @@ public class SpaceInvaderAnimation extends JPanel implements Runnable {
 
             g.setColor(Color.WHITE);
             int starX = star.x + offset / (layer + 1); // Move slower for farther layers
-
             if (starX >= WIDTH) {
 
                 starX -= WIDTH;
@@ -112,19 +110,24 @@ public class SpaceInvaderAnimation extends JPanel implements Runnable {
     private int calculatePlanetXPosition () {
 
         // Calculate the current X position of the planet based on circular motion
+        // Starting X position of the planet (fixed)
+        int planetStartX = 100;
+
         return (int) (planetStartX + orbitRadius * Math.cos(currentAngle));
     }
 
     private int calculatePlanetYPosition () {
 
         // Calculate the current Y position of the planet based on circular motion
+        // Y position of the planet (fixed)
+        int planetY = 100;
+
         return (int) (planetY + orbitRadius * Math.sin(currentAngle));
     }
 
     private void drawSpaceInvader (Graphics g, int x, int y, int frame) {
 
         g.setColor(SPACE_INVADER_COLOR);
-
         // Draw a more detailed and animated space invader
         if (frame == 0) {
 
