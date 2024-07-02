@@ -157,7 +157,7 @@ public class H261Encoder {
 
     private void writePictureHeader (int temporalReference) throws IOException {
 
-        // 32 bits
+        // 32 bits (fixed)
         // PSC (20 bits)
         this.stream.write(0b0000_0000_0000_0001_0000, 20);
         this.stream.write(temporalReference, 5); // TR (5 bits)
@@ -174,7 +174,7 @@ public class H261Encoder {
 
     private void writeGobHeader (final int row, final int column) throws IOException {
 
-        // 26 bits
+        // 26 bits currently, but can be longer
         // GOB start code (16 bits)
         this.stream.write(1, 16);
         // GN 1 - 12 (4 bits)
