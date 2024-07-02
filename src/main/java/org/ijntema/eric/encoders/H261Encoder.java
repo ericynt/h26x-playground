@@ -447,6 +447,7 @@ public class H261Encoder {
                     level = 1;
                 }
 
+                // See the standard documentation
                 if (level == 128) {
 
                     this.stream.write(0b1111_1111, 8);
