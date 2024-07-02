@@ -130,12 +130,6 @@ public class H261Encoder {
             final int[][][] yCbCrMatrix
     ) throws IOException {
 
-//        int gobN = (macroblockRow == 0 && macroblockColumn == 0) ? 0 : (gobRow * GOB_COLUMNS) + gobColumn + 1; // 2 - 12
-//        int mbap = (macroblockRow == 0 && macroblockColumn == 0) ? 0 : (macroblockRow * MACROBLOCK_COLUMNS) +
-//                macroblockColumn; // Not + 1 because it's the number of the previous MB, 1 - 32
-//        int quant = (macroblockRow == 0 && macroblockColumn == 0) ? 0 : QUANT;
-//        this.writeH261Header(gobN, mbap, quant); // Every packet has a H261 Header
-
         if (gobRow == 0 && gobColumn == 0 && macroblockRow == 0 && macroblockColumn == 0) { // First packet for a Picture has a Picture Header
 
             this.writePictureHeader(temporalReferenceCount);
@@ -156,20 +150,6 @@ public class H261Encoder {
         this.writeMacroblockHeader(macroblockRow, macroblockColumn);
         this.writeMacroblock(blocks);
         this.byteAlignStream();
-    }
-
-    private void writeH261Header (final int gobN, final int mbap, final int quant) throws IOException {
-
-        // 32 bits
-        this.stream.write(0, 3); // SBIT (3 bits) 0 not used currently
-        this.stream.write(0, 3); // EBIT (3 bits) Amount of bits at the end of the packet that the decoder should ignore, is updated after the packet is created
-        this.stream.write(1, 1); // INTRA (1 bit)
-        this.stream.write(0, 1); // MV flag (1 bit)
-        this.stream.write(gobN, 4); // GOBN (4 bits)
-        this.stream.write(mbap, 5); // MBAP (5 bits)
-        this.stream.write(quant, 5); // QUANT (5 bits)
-        this.stream.write(0, 5); // HMVD (5 bits) Set to 0 because the MV flag is 0
-        this.stream.write(0, 5); // VMVD (5 bits) Set to 0 because the MV flag is 0
     }
 
     private void writePictureHeader (int temporalReference) throws IOException {
