@@ -8,20 +8,21 @@ import java.util.Random;
 
 public class SpaceInvaderAnimation extends JPanel implements Runnable {
 
-    private static final int WIDTH          = 352;
-    private static final int HEIGHT         = 288;
-    private static final int FRAME_RATE     = 30;
-    private static final int INVADER_WIDTH  = 40;
-    private static final int INVADER_HEIGHT = 30;
-    private static final int INVADER_STEP   = 5;
-    private static final int STAR_COUNT     = 25;
-    private static final int TWINKLE_RATE   = 50;
-    private static final int LAYER_COUNT    = 3;
-    private static final int NUM_FRAMES     = 2;
-    private static final Color SPACE_INVADER_COLOR = Color.GREEN;
-    private static final Color PLANET_COLOR = new Color(8, 36, 94);
-    private static final Color CRATERS_COLOR = Color.LIGHT_GRAY;
-    private static final Color BACKGROUND_COLOR = new Color(29, 29, 29);
+    private static final int    WIDTH               = 352;
+    private static final int    HEIGHT              = 288;
+    private static final int    FRAME_RATE          = 30;
+    private static final int    INVADER_WIDTH       = 40;
+    private static final int    INVADER_HEIGHT      = 30;
+    private static final int    INVADER_STEP        = 5;
+    private static final int    STAR_COUNT          = 25;
+    private static final int    TWINKLE_RATE        = 50;
+    private static final int    LAYER_COUNT         = 3;
+    private static final int    NUM_FRAMES          = 2;
+    private static final double ORBIT_SPEED         = 0.01; // Speed of orbit in radians per frame
+    private static final Color  SPACE_INVADER_COLOR = Color.GREEN;
+    private static final Color  PLANET_COLOR        = new Color(8, 36, 94);
+    private static final Color  CRATERS_COLOR       = Color.LIGHT_GRAY;
+    private static final Color  BACKGROUND_COLOR    = new Color(29, 29, 29);
 
     private int    invaderX       = 0;
     private int    invaderY       = HEIGHT / 2 - INVADER_HEIGHT / 2;
@@ -36,7 +37,6 @@ public class SpaceInvaderAnimation extends JPanel implements Runnable {
     private final int[]           layerOffsets = new int[LAYER_COUNT];
     private final int[]           layerSpeeds  = {1, 2, 3}; // Different speeds for each layer
     private final double          orbitRadius  = 100.0; // Radius of the circular orbit
-    private       double          orbitSpeed   = 0.01; // Speed of orbit in radians per frame
 
     public SpaceInvaderAnimation () {
 
@@ -236,7 +236,7 @@ public class SpaceInvaderAnimation extends JPanel implements Runnable {
     private void updatePlanetPosition () {
 
         // Update the angle for circular motion
-        currentAngle += orbitSpeed;
+        currentAngle += ORBIT_SPEED;
 
         // Ensure the angle stays within 0 to 2π radians
         if (currentAngle > Math.PI * 2) {
