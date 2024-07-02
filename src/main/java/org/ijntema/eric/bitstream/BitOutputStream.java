@@ -7,6 +7,9 @@ package org.ijntema.eric.bitstream;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /**
  * Base class of bit output streams.
  *
@@ -14,17 +17,22 @@ import java.io.OutputStream;
  */
 public abstract class BitOutputStream extends BitStream {
 
-    protected OutputStream out;
-    protected int buffer;
+    @Getter
+    protected OutputStream outputStream;
+    @Getter
+    @Setter
+    protected int          buffer;
+    @Getter
+    @Setter
     protected int bufferBitCount;
 
     /**
      * Initializes a bit output stream from an OutputStream.
      *
-     * @param out the OutputStream.
+     * @param outputStream the OutputStream.
      */
-    public BitOutputStream(OutputStream out) {
-        this.out = out;
+    public BitOutputStream(OutputStream outputStream) {
+        this.outputStream = outputStream;
         this.bufferBitCount = 0;
     }
 
@@ -44,13 +52,8 @@ public abstract class BitOutputStream extends BitStream {
      */
     public void close() throws IOException {
         if (bufferBitCount > 0) {
-            out.write(buffer);
+            outputStream.write(buffer);
         }
-        out.close();
-    }
-
-    public OutputStream getOutputStream () {
-
-        return out;
+        outputStream.close();
     }
 }

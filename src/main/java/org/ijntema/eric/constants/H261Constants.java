@@ -7,7 +7,7 @@ import javafx.util.Pair;
 
 public class H261Constants {
 
-    public static final int                                                QUANT                        = 1;
+    public static final int                                                QUANT                        = 31;
     public static final int                                                PICTURE_WIDTH                = 352;
     public static final int                                                PICTURE_HEIGHT               = 288;
     public static final int                                                GOB_ROWS                     = 6;
@@ -36,15 +36,15 @@ public class H261Constants {
 
     public static final int[] TEST_MATRIX =
             {
-                    126, 1, 5, 6, 14, 15, 27, 28,
-                    2, 4, 7, 13, 16, 26, 29, 42,
-                    3, 8, 12, 17, 25, 30, 41, 43,
-                    9, 11, 18, 24, 31, 40, 44, 53,
-                    10, 19, 23, 0, 0, 0, 0, 54,
-                    0, 0, 0, 38, 46, 0, 0, 60,
-                    21, 34, 37, 47, 0, 0, 0, 0,
-                    35, 36, 0, 49, 0, 0, 0, 0
-            };
+                    254, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0,
+                    };
 
     static {
 

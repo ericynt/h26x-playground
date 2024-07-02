@@ -46,7 +46,7 @@ public class LittleEndianBitOutputStream extends BitOutputStream {
                 numBits = 0;
             } else {
                 buffer = ((data & MASKS[rest]) << bufferBitCount) | buffer;
-                out.write(buffer);
+                outputStream.write(buffer);
                 numBits -= rest;
                 data >>>= rest;
                 bufferBitCount = 0;

@@ -50,21 +50,11 @@ public class BigEndianBitOutputStream extends BitOutputStream {
             } else {
 
                 buffer = ((data >> (numBits - rest)) & MASKS[rest]) | buffer;
-                out.write(buffer);
+                outputStream.write(buffer);
                 numBits -= rest;
                 bufferBitCount = 0;
                 buffer = 0;
             }
         }
-    }
-
-    public int getBufferBitCount () {
-
-        return bufferBitCount;
-    }
-
-    public int getBuffer () {
-
-        return buffer;
     }
 }

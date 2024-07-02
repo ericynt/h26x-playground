@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import javafx.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +23,6 @@ import static org.ijntema.eric.constants.H261Constants.PICTURE_HEIGHT;
 import static org.ijntema.eric.constants.H261Constants.PICTURE_WIDTH;
 import static org.ijntema.eric.constants.H261Constants.QUANT;
 import static org.ijntema.eric.constants.H261Constants.TOTAL_BLOCKS;
-import static org.ijntema.eric.constants.H261Constants.VLC_TABLE_TCOEFF;
 import static org.ijntema.eric.constants.H261Constants.ZIGZAG_ORDER;
 
 @Slf4j
@@ -149,7 +147,6 @@ public class H261Encoder {
 
         this.writeMacroblockHeader(macroblockRow, macroblockColumn);
         this.writeMacroblock(blocks);
-        this.byteAlignStream();
     }
 
     private void writePictureHeader (int temporalReference) throws IOException {
@@ -173,7 +170,7 @@ public class H261Encoder {
         this.stream.write(1, 16); // GOB start code (16 bits)
         int groupNumber = (row * GOB_COLUMNS) + column + 1; // 1 - 12
         this.stream.write(groupNumber, 4); // GN (4 bits)
-        this.stream.write(1, 5); // GQUANT (5 bits)
+        this.stream.write(QUANT, 5); // GQUANT (5 bits)
         this.stream.write(0, 1); // GEI (1 bit)
     }
 
@@ -206,6 +203,9 @@ public class H261Encoder {
     ) {
 
         int[][][] blocks = new int[TOTAL_BLOCKS][BLOCK_SIZE][BLOCK_SIZE];
+        int[][] cbAccumulators = new int[BLOCK_SIZE][BLOCK_SIZE];
+        int[][] crAccumulators = new int[BLOCK_SIZE][BLOCK_SIZE];
+        int[][] countAccumulators = new int[BLOCK_SIZE][BLOCK_SIZE];
 
         for (int i = pixelRowAndColumn.getKey(); i < pixelRowAndColumn.getKey() + 16; i++) {
 
@@ -213,27 +213,39 @@ public class H261Encoder {
 
                 int x = i % 16;
                 int y = j % 16;
-                // Y
-                if (x < 8 && y < 8) { // Bottom left
 
-                    blocks[2][x][y] = yCbCr[i][j][0];
-                } else if (x < 8) { // Top left
+                // Y component
+                if (x < 8 && y < 8) {
 
-                    blocks[0][x][y - 8] = yCbCr[i][j][0];
-                } else if (y < 8) { // Bottom right
+                    blocks[2][x][y] = yCbCr[i][j][0]; // Bottom left
+                } else if (x < 8) {
 
-                    blocks[3][x - 8][y] = yCbCr[i][j][0];
-                } else { // Top right
+                    blocks[0][x][y - 8] = yCbCr[i][j][0]; // Top left
+                } else if (y < 8) {
 
-                    blocks[1][x - 8][y - 8] = yCbCr[i][j][0];
+                    blocks[3][x - 8][y] = yCbCr[i][j][0]; // Bottom right
+                } else {
+
+                    blocks[1][x - 8][y - 8] = yCbCr[i][j][0]; // Top right
                 }
 
-                // CbCr
-                if (x % 2 == 0 && y % 2 == 0) {
+                // Cb and Cr components
+                int cbCrX = x / 2;
+                int cbCrY = y / 2;
 
-                    blocks[4][x / 2][y / 2] = yCbCr[i][j][1];
-                    blocks[5][x / 2][y / 2] = yCbCr[i][j][2];
-                }
+                cbAccumulators[cbCrX][cbCrY] += yCbCr[i][j][1];
+                crAccumulators[cbCrX][cbCrY] += yCbCr[i][j][2];
+                countAccumulators[cbCrX][cbCrY]++;
+            }
+        }
+
+        // Calculate and assign the averages for Cb and Cr
+        for (int i = 0; i < 8; i++) {
+
+            for (int j = 0; j < 8; j++) {
+
+                blocks[4][i][j] = cbAccumulators[i][j] / countAccumulators[i][j];
+                blocks[5][i][j] = crAccumulators[i][j] / countAccumulators[i][j];
             }
         }
 
@@ -313,27 +325,29 @@ public class H261Encoder {
                 if (i == 0 && j == 0) {
 
                     // Apply DC step size for the top-left element.
-//                    quantized[i][j] = (int) Math.round((matrix[i][j] / DC_step_size));
-                    quantized[i][j] = (int) matrix[i][j] / DC_step_size;
+                    quantized[i][j] = (int) Math.round((matrix[i][j] / DC_step_size));
+//                    quantized[i][j] = (int) matrix[i][j] / DC_step_size;
                 } else {
 
-//                    rec = quant * (2 * level + 1); level > 0
-//                    rec / quant = 2 * level + 1
-//                    (rec / quant) -1 = 2 * level
-//                    ((rec / quant) -1) / 2 = level
-//
-//                    rec = quant * (2 * level - 1); level < 0
-//                    rec / quant = 2 * level - 1
-//                    (rec / quant) + 1 = 2 * level
-//                    ((rec / quant) + 1) / 2 = level
+                    // rec = quant * (2 * level + 1); level > 0
+                    // rec / quant = 2 * level + 1
+                    // rec / quant) -1 = 2 * level
+                    // rec / quant) -1) / 2 = level
+                    //
+                    // rec = quant * (2 * level - 1); level < 0
+                    // rec / quant = 2 * level - 1
+                    // (rec / quant) + 1 = 2 * level
+                    // ((rec / quant) + 1) / 2 = level
                     // Apply AC step size for the other elements.
                     double coeff = matrix[i][j];
                     if (coeff < 0) {
 
-                        quantized[i][j] = (int) (((coeff) / QUANT) + 1) / 2;
+//                        quantized[i][j] = (int) (((coeff) / QUANT) + 1) / 2;
+                        quantized[i][j] = (int) Math.round((((coeff) / QUANT) + 1) / 2);
                     } else {
 
-                        quantized[i][j] = (int) (((coeff) / QUANT) - 1) / 2;
+//                        quantized[i][j] = (int) (((coeff) / QUANT) - 1) / 2;
+                        quantized[i][j] = (int) Math.round((((coeff) / QUANT) - 1) / 2);
                     }
                 }
             }
@@ -408,51 +422,36 @@ public class H261Encoder {
                 }
             } else { // AC
 
-                boolean foundInVlcTable = false;
-                Map<Integer, Pair<Integer, Integer>> runMap = VLC_TABLE_TCOEFF.get(run);
-                if (runMap != null) {
+//                boolean foundInVlcTable = false;
+//                Map<Integer, Pair<Integer, Integer>> runMap = VLC_TABLE_TCOEFF.get(run);
+//                if (runMap != null) {
+//
+//                    Pair<Integer, Integer> codeAndBitsPair = runMap.get(level);
+//                    if (codeAndBitsPair != null) {
+//
+//                        foundInVlcTable = true;
+//                        this.stream.write(codeAndBitsPair.getKey(), codeAndBitsPair.getValue());
+//                    }
+//                }
+//
+//                if (!foundInVlcTable) { // Fixed length code
 
-                    Pair<Integer, Integer> codeAndBitsPair = runMap.get(level);
-                    if (codeAndBitsPair != null) {
-
-                        foundInVlcTable = true;
-                        this.stream.write(codeAndBitsPair.getKey(), codeAndBitsPair.getValue());
-                    }
-                }
-
-                if (!foundInVlcTable) { // Fixed length code
-
-                    this.stream.write(0b0000_01, 6); // ESCAPE (6 bits)
-                    this.stream.write(run, 6); // RUN (6 bits)
-                    this.stream.write(level, 8); // LEVEL (8 bits)
-                }
+                this.stream.write(0b0000_01, 6); // ESCAPE (6 bits)
+                this.stream.write(run, 6); // RUN (6 bits)
+                this.stream.write(level, 8); // LEVEL (8 bits)
+//                }
             }
         }
 
         // Check if this is needed
-        if (sequence.length == 0) {
-
-            this.stream.write(1, 8);
-        }
+//        if (sequence.length == 0) {
+//
+//            this.stream.write(1, 8);
+//        }
     }
 
     private void writeBlockEnd () throws IOException {
 
         this.stream.write(2, 2);
-    }
-
-    private void byteAlignStream () throws IOException {
-
-        int bufferBitCount = this.stream.getBufferBitCount();
-        if (bufferBitCount > 0) {
-
-            int numBits = 8 - bufferBitCount;
-            this.stream.write(0, numBits); // Byte align
-
-            byte[] byteArray = ((ByteArrayOutputStream) this.stream.getOutputStream()).toByteArray();
-            int headerFirstByte = byteArray[0];
-            headerFirstByte = headerFirstByte | (numBits << 2); // Set with numBits value
-            byteArray[0] = (byte) headerFirstByte;
-        }
     }
 }
