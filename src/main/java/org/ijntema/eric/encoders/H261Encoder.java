@@ -52,7 +52,8 @@ public class H261Encoder {
 
         // Only created I-frames at the moment
 
-        int temporalReferenceCount = 0; // 0 - 31, increment for every Picture
+        // 0 - 31, increment for every Picture
+        int temporalReferenceCount = 0;
 
         try {
 
