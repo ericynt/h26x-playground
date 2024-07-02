@@ -37,14 +37,18 @@ public class BigEndianBitOutputStream extends BitOutputStream {
      * @throws IOException if an I/O error occurs.
      */
     public void write (int data, int numBits) throws IOException {
+
         while (numBits > 0) {
+
             int rest = 8 - bufferBitCount;
 
             if (rest > numBits) {
+
                 buffer = ((data & MASKS[numBits]) << (rest - numBits)) | buffer;
                 bufferBitCount += numBits;
                 numBits = 0;
             } else {
+
                 buffer = ((data >> (numBits - rest)) & MASKS[rest]) | buffer;
                 out.write(buffer);
                 numBits -= rest;

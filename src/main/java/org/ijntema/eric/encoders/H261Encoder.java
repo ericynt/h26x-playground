@@ -12,7 +12,6 @@ import java.util.Map;
 import javafx.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.ijntema.eric.bitstream.BigEndianBitOutputStream;
-import org.ijntema.eric.constants.H261Constants;
 import org.ijntema.eric.frames.SpaceInvaderAnimation;
 import org.ijntema.eric.streamers.UdpStreamer;
 
@@ -23,6 +22,7 @@ import static org.ijntema.eric.constants.H261Constants.MACROBLOCK_COLUMNS;
 import static org.ijntema.eric.constants.H261Constants.MACROBLOCK_ROWS;
 import static org.ijntema.eric.constants.H261Constants.PICTURE_HEIGHT;
 import static org.ijntema.eric.constants.H261Constants.PICTURE_WIDTH;
+import static org.ijntema.eric.constants.H261Constants.QUANT;
 import static org.ijntema.eric.constants.H261Constants.TOTAL_BLOCKS;
 import static org.ijntema.eric.constants.H261Constants.VLC_TABLE_TCOEFF;
 import static org.ijntema.eric.constants.H261Constants.ZIGZAG_ORDER;
@@ -30,12 +30,9 @@ import static org.ijntema.eric.constants.H261Constants.ZIGZAG_ORDER;
 @Slf4j
 public class H261Encoder {
 
-
     private final UdpStreamer              udpStreamer;
     private final SpaceInvaderAnimation    frameGenerator = new SpaceInvaderAnimation();
     private final BigEndianBitOutputStream stream         = new BigEndianBitOutputStream(new ByteArrayOutputStream());
-
-    private boolean firstPicture = true;
 
     public H261Encoder () throws SocketException {
 
@@ -95,8 +92,6 @@ public class H261Encoder {
                 Thread.sleep(1000 / 31);
 
                 temporalReferenceCount++;
-
-                firstPicture = false;
             }
         } finally {
 
@@ -138,7 +133,7 @@ public class H261Encoder {
         int gobN = (macroblockRow == 0 && macroblockColumn == 0) ? 0 : (gobRow * GOB_COLUMNS) + gobColumn + 1; // 2 - 12
         int mbap = (macroblockRow == 0 && macroblockColumn == 0) ? 0 : (macroblockRow * MACROBLOCK_COLUMNS) +
                 macroblockColumn; // Not + 1 because it's the number of the previous MB, 1 - 32
-        int quant = (macroblockRow == 0 && macroblockColumn == 0) ? 0 : 1;
+        int quant = (macroblockRow == 0 && macroblockColumn == 0) ? 0 : QUANT;
         this.writeH261Header(gobN, mbap, quant); // Every packet has a H261 Header
 
         if (gobRow == 0 && gobColumn == 0 && macroblockRow == 0 && macroblockColumn == 0) { // First packet for a Picture has a Picture Header
@@ -151,8 +146,6 @@ public class H261Encoder {
             this.writeGobHeader(gobRow, gobColumn);
         }
 
-        this.writeMacroblockHeader(macroblockRow, macroblockColumn);
-
         Pair<Integer, Integer> marcroblockStartRowAndColumn =
                 this.getMarcroblockStartRowAndColumn(gobRow, gobColumn, macroblockRow, macroblockColumn);
         int[][][] blocks = toBlocks(
@@ -160,17 +153,12 @@ public class H261Encoder {
                 yCbCrMatrix
         );
 
+        this.writeMacroblockHeader(macroblockRow, macroblockColumn);
         this.writeMacroblock(blocks);
         this.byteAlignStream();
     }
 
     private void writeH261Header (final int gobN, final int mbap, final int quant) throws IOException {
-
-        if (this.firstPicture) {
-
-            log.info("\n");
-            log.info("H261 Header");
-        }
 
         // 32 bits
         this.stream.write(0, 3); // SBIT (3 bits) 0 not used currently
@@ -185,11 +173,6 @@ public class H261Encoder {
     }
 
     private void writePictureHeader (int temporalReference) throws IOException {
-
-        if (this.firstPicture) {
-
-            log.info("Picture Header");
-        }
 
         // 32 bits
         this.stream.write(0b0000_0000_0000_0001_0000, 20); // PSC (20 bits)
@@ -212,11 +195,6 @@ public class H261Encoder {
         this.stream.write(groupNumber, 4); // GN (4 bits)
         this.stream.write(1, 5); // GQUANT (5 bits)
         this.stream.write(0, 1); // GEI (1 bit)
-
-        if (this.firstPicture) {
-
-            log.info("GOB Header, nr: {}", groupNumber);
-        }
     }
 
     private void writeMacroblockHeader (final int row, final int column) throws IOException {
@@ -227,11 +205,6 @@ public class H261Encoder {
 //        this.stream.write(vlc.getKey(), vlc.getValue()); // MACROBLOCK ADDRESS (variable length)
         this.stream.write(0b1, 1);
         this.stream.write(0b0001, 4); // MTYPE (4 bit)
-
-        if (this.firstPicture) {
-
-            log.info("Macroblock Header, nr: {}", macroblockAddress);
-        }
     }
 
     private Pair<Integer, Integer> getMarcroblockStartRowAndColumn (
@@ -350,10 +323,8 @@ public class H261Encoder {
     public int[][] quantize (double[][] matrix) {
 
         int[][] quantized = new int[BLOCK_SIZE][BLOCK_SIZE];
-        int scale = 31;
 
         int DC_step_size = 8;
-        int AC_step_size = 2 * scale;
 
         for (int i = 0; i < BLOCK_SIZE; i++) {
 
@@ -362,11 +333,28 @@ public class H261Encoder {
                 if (i == 0 && j == 0) {
 
                     // Apply DC step size for the top-left element.
-                    quantized[i][j] = (int) Math.round(matrix[i][j] / DC_step_size);
+//                    quantized[i][j] = (int) Math.round((matrix[i][j] / DC_step_size));
+                    quantized[i][j] = (int) matrix[i][j] / DC_step_size;
                 } else {
 
+//                    rec = quant * (2 * level + 1); level > 0
+//                    rec / quant = 2 * level + 1
+//                    (rec / quant) -1 = 2 * level
+//                    ((rec / quant) -1) / 2 = level
+//
+//                    rec = quant * (2 * level - 1); level < 0
+//                    rec / quant = 2 * level - 1
+//                    (rec / quant) + 1 = 2 * level
+//                    ((rec / quant) + 1) / 2 = level
                     // Apply AC step size for the other elements.
-                    quantized[i][j] = (int) Math.round(matrix[i][j] / AC_step_size);
+                    double coeff = matrix[i][j];
+                    if (coeff < 0) {
+
+                        quantized[i][j] = (int) (((coeff) / QUANT) + 1) / 2;
+                    } else {
+
+                        quantized[i][j] = (int) (((coeff) / QUANT) - 1) / 2;
+                    }
                 }
             }
         }
@@ -421,24 +409,50 @@ public class H261Encoder {
             int run = sequence[i];
             int level = sequence[i + 1];
 
-            boolean foundInVlcTable = false;
-            Map<Integer, Pair<Integer, Integer>> runMap = VLC_TABLE_TCOEFF.get(run);
-            if (runMap != null && i != 0) { // Not for the first coefficient in the block
+            if (i == 0) { // DC
 
-                Pair<Integer, Integer> levelMap = runMap.get(level);
-                if (levelMap != null) {
+                if (level > 254) {
 
-                    foundInVlcTable = true;
-                    this.stream.write(levelMap.getKey(), levelMap.getValue());
+                    level = 254;
+                } else if (level < 1) {
+
+                    level = 1;
+                }
+
+                if (level == 128) {
+
+                    this.stream.write(0b1111_1111, 8);
+                } else {
+
+                    this.stream.write(level, 8);
+                }
+            } else { // AC
+
+                boolean foundInVlcTable = false;
+                Map<Integer, Pair<Integer, Integer>> runMap = VLC_TABLE_TCOEFF.get(run);
+                if (runMap != null) {
+
+                    Pair<Integer, Integer> codeAndBitsPair = runMap.get(level);
+                    if (codeAndBitsPair != null) {
+
+                        foundInVlcTable = true;
+                        this.stream.write(codeAndBitsPair.getKey(), codeAndBitsPair.getValue());
+                    }
+                }
+
+                if (!foundInVlcTable) { // Fixed length code
+
+                    this.stream.write(0b0000_01, 6); // ESCAPE (6 bits)
+                    this.stream.write(run, 6); // RUN (6 bits)
+                    this.stream.write(level, 8); // LEVEL (8 bits)
                 }
             }
+        }
 
-            if (!foundInVlcTable) {
+        // Check if this is needed
+        if (sequence.length == 0) {
 
-                this.stream.write(0b0000_01, 6); // ESCAPE (6 bits)
-                this.stream.write(run, 6); // RUN (6 bits)
-                this.stream.write(level, 8); // LEVEL (8 bits)
-            }
+            this.stream.write(1, 8);
         }
     }
 

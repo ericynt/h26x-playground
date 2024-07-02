@@ -20,7 +20,7 @@ public class SpaceInvaderAnimation extends JPanel implements Runnable {
     private static final Color           PLANET_COLOR        = new Color(8, 36, 94);
     private static final Color           CRATERS_COLOR       = Color.LIGHT_GRAY;
     private static final Color           SPACE_INVADER_COLOR = Color.GREEN;
-    private static final Color           BACKGROUND_COLOR    = new Color(0, 0, 0);
+    private static final Color           BACKGROUND_COLOR    = new Color(33, 28, 28);
     private              int             invaderX            = 0;
     private              int             invaderY            = HEIGHT / 2 - INVADER_HEIGHT / 2;
     private              int             directionX          = 1; // 1 for right, -1 for left
