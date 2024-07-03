@@ -11,23 +11,23 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@Getter
 public class UdpStreamer extends Thread {
 
-    private final DatagramSocket             socket;
-    @Getter
+    private       int                        sendPort    = 55555;
     private final ArrayBlockingQueue<byte[]> packetQueue = new ArrayBlockingQueue<>(500);
 
-    public UdpStreamer () throws SocketException {
+    public UdpStreamer (int sendPort) {
 
-        // Create Socket with random port
-        socket = new DatagramSocket();
+        this.sendPort = sendPort;
     }
 
     public void run () {
 
         log.info("Starting UDP streamer");
 
-        try {
+        try (DatagramSocket socket = new DatagramSocket()) {
+
             while (true) {
 
                 try {
@@ -35,7 +35,6 @@ public class UdpStreamer extends Thread {
                     // Blocks until new data is available
                     byte[] bytes = this.packetQueue.take();
                     InetAddress sendHost = InetAddress.getLoopbackAddress();
-                    int sendPort = 55555;
                     DatagramPacket packet = new DatagramPacket(bytes, bytes.length, sendHost, sendPort);
 
                     socket.send(packet);
@@ -44,9 +43,9 @@ public class UdpStreamer extends Thread {
                     throw new RuntimeException(e);
                 }
             }
-        } finally {
+        } catch (SocketException e) {
 
-            socket.close();
+            throw new RuntimeException(e);
         }
     }
 }

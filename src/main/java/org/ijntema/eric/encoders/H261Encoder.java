@@ -28,7 +28,7 @@ import static org.ijntema.eric.constants.H261Constants.ZIGZAG_ORDER;
 @Slf4j
 public class H261Encoder {
 
-    private final UdpStreamer              udpStreamer    = new UdpStreamer();
+    private final UdpStreamer              udpStreamer    = new UdpStreamer(55555);
     private final FrameGenerator           frameGenerator = new FrameGenerator();
     private final BigEndianBitOutputStream stream         = new BigEndianBitOutputStream(new ByteArrayOutputStream());
 
