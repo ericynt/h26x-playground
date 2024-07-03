@@ -7,6 +7,8 @@ package org.ijntema.eric.bitstream;
 import java.io.IOException;
 import java.io.OutputStream;
 
+// Updated by Eric IJntema
+
 /**
  * This class writes bits to an OutputStream, in big endian order.
  * For example, if 101 and 0101101 are written, 10101011 will be written to

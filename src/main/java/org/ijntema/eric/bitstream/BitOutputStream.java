@@ -10,6 +10,8 @@ import java.io.OutputStream;
 import lombok.Getter;
 import lombok.Setter;
 
+// Updated by Eric IJntema
+
 /**
  * Base class of bit output streams.
  *
