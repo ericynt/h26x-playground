@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import javafx.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -23,19 +24,19 @@ import static org.ijntema.eric.constants.H261Constants.PICTURE_HEIGHT;
 import static org.ijntema.eric.constants.H261Constants.PICTURE_WIDTH;
 import static org.ijntema.eric.constants.H261Constants.QUANT;
 import static org.ijntema.eric.constants.H261Constants.TOTAL_BLOCKS;
+import static org.ijntema.eric.constants.H261Constants.VLC_TABLE_TCOEFF;
 import static org.ijntema.eric.constants.H261Constants.ZIGZAG_ORDER;
 
 @Slf4j
 public class H261Encoder {
 
-    private final UdpStreamer              udpStreamer;
+    private final UdpStreamer              udpStreamer    = new UdpStreamer();
     private final SpaceInvaderAnimation    frameGenerator = new SpaceInvaderAnimation();
     private final BigEndianBitOutputStream stream         = new BigEndianBitOutputStream(new ByteArrayOutputStream());
 
     public H261Encoder () throws SocketException {
 
         // Start the UDP streamer
-        udpStreamer = new UdpStreamer();
         Thread t = new Thread(udpStreamer);
         t.setDaemon(true);
         t.start();
@@ -77,10 +78,20 @@ public class H261Encoder {
                                 createH261PacketBytes(i, j, k, l, temporalReferenceCount, yCbCrMatrix);
 
                                 byte[] h261Packet = ((ByteArrayOutputStream) this.stream.getOutputStream()).toByteArray();
-                                this.udpStreamer.getPacketQueue().add(h261Packet);
 
-                                // Reset the stream
-                                ((ByteArrayOutputStream) this.stream.getOutputStream()).reset();
+                                // Send macroblocks when they are byte aligned
+                                if (this.stream.getBufferBitCount() == 0 || h261Packet.length > 1200) {
+
+                                    if (h261Packet.length > 1200) {
+
+                                        log.info("Packet size: {} bytes", h261Packet.length);
+                                    }
+
+                                    this.udpStreamer.getPacketQueue().add(h261Packet);
+
+                                    // Reset the stream
+                                    ((ByteArrayOutputStream) this.stream.getOutputStream()).reset();
+                                }
                             }
                         }
 
@@ -457,7 +468,7 @@ public class H261Encoder {
                 }
             } else { // AC
 
-//                boolean foundInVlcTable = false;
+                boolean foundInVlcTable = false;
 //                Map<Integer, Pair<Integer, Integer>> runMap = VLC_TABLE_TCOEFF.get(run);
 //                if (runMap != null) {
 //
@@ -468,21 +479,15 @@ public class H261Encoder {
 //                        this.stream.write(codeAndBitsPair.getKey(), codeAndBitsPair.getValue());
 //                    }
 //                }
-//
+
 //                if (!foundInVlcTable) { // Fixed length code
 
-                this.stream.write(0b0000_01, 6); // ESCAPE (6 bits)
-                this.stream.write(run, 6); // RUN (6 bits)
-                this.stream.write(level, 8); // LEVEL (8 bits)
+                    this.stream.write(0b0000_01, 6); // ESCAPE (6 bits)
+                    this.stream.write(run, 6); // RUN (6 bits)
+                    this.stream.write(level, 8); // LEVEL (8 bits)
 //                }
             }
         }
-
-        // Check if this is needed
-//        if (sequence.length == 0) {
-//
-//            this.stream.write(1, 8);
-//        }
     }
 
     private void writeBlockEnd () throws IOException {
