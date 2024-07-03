@@ -7,7 +7,7 @@
 - Generates RGB 352 x 288 frames
 - Applies H.261 compression algorithm
 - Serves data in UDP datagrams
-- Currently only supports I-frame compression
+- Currently only supports I-frames
 
 ## How to start
 - install ffmpeg
