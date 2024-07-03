@@ -1,43 +1,15 @@
-# Steps
-- generate RGB 352 x 288 frames
-- apply H.261 compression algorithm
-    - preprocessing
-      - map JPEGs into two dimensional YCbCr 4:2:0 pixel arrays
-      - divide pixel arrays into Groups Of Block (GOB's)
-      - divide GOB's into Macro Blocks (MB's)
-    - decide how to encode MB (don't encode/encode I-frame compression/encode P-frame compression)
-    - algorithm
-      - if P-frame 
-        - calculate difference with previous frame 
-        - calculate motion vector
-      - DCT
-      - quantize
-      - zigzag
-      - run length encoding
-      - huffman encoding
-- serving data
-  - put H.261 block coefficients into H.261 packets
-  - serve H.261 packets in UDP datagrams
+# H.261 standard compliant video Encoder written in Java
 
-# Notes
-- keep constant bitrate according to H.261 standard
-- serve the data in a loop
-- log network debug information
+# Application structure
+- FrameGenerator --[RGB frames]--> H261Encoder --[H261 packets]--> UdpStreamer --[UDP datagrams]--> 127.0.0.1:55555
 
-# Nice to haves
-- print bitrate in every frame
-- print compression ratio in every frame
-- print network debug information in every frame
+## Features
+- Generates RGB 352 x 288 frames
+- Applies H.261 compression algorithm
+- Serves data in UDP datagrams
+- Currently only supports I-frame compression
 
-# Future
-- Look into RTP, RTCP and RTSP
-- Look into MPEG-TS
-- H.264 support
-
-# ffmpeg
-ffmpeg -stream_loop 10 -re -i "echo-hereweare.mp4" -f mpegts "udp://127.0.0.1:55555"
-ffmpeg -stream_loop 10 -re -i "echo-hereweare.mp4" -f h264 "udp://127.0.0.1:55555"
-ffmpeg -stream_loop 10 -re -i "page18-movie-4.3gp" -f h261 "udp://127.0.0.1:55555"
-
-# ffplay
-ffplay udp://127.0.0.1:55555 -loglevel debug
+## How to start
+- install ffmpeg
+- start H261 Encoder
+- open stream with 'ffplay udp://127.0.0.1:55555 -loglevel debug' 
