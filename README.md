@@ -10,6 +10,10 @@
 - Currently only supports I-frames
 
 ## How to start
-- install ffmpeg
-- start H261 Encoder
-- open stream with 'ffplay udp://127.0.0.1:55555 -loglevel debug' 
+- Install ffmpeg
+- Start H261 Encoder
+- Open stream with 'ffplay udp://127.0.0.1:55555 -loglevel debug' 
+
+## Remarks
+- Made to understand how the algorithm works
+- Not intended for production use
