@@ -82,7 +82,7 @@ public class H261Encoder {
 
                                     if (h261Packet.length > 1200) {
 
-                                        log.info("Packet size: {} bytes", h261Packet.length);
+                                        log.warn("Packet size: {} bytes", h261Packet.length);
                                     }
 
                                     this.udpStreamer.getPacketQueue().add(h261Packet);
