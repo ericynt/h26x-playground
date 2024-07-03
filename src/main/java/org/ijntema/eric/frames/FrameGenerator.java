@@ -6,6 +6,9 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Random;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class FrameGenerator extends JPanel implements Runnable {
 
     private static final int    WIDTH               = 352;
@@ -39,6 +42,8 @@ public class FrameGenerator extends JPanel implements Runnable {
     private final double          orbitRadius  = 80.0; // Radius of the circular orbit
 
     public FrameGenerator () {
+
+        log.info("Starting Frame Generator");
 
         initializeStars();
         new Thread(this).start();

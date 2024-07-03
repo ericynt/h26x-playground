@@ -42,7 +42,7 @@ public class H261Encoder {
 
     public static void main (String[] args) throws IOException, InterruptedException {
 
-        log.info("Starting H261Encoder");
+        log.info("Starting H261 Encoder");
 
         new H261Encoder().encode();
     }
