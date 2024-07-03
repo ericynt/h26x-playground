@@ -6,7 +6,7 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Random;
 
-public class SpaceInvaderAnimation extends JPanel implements Runnable {
+public class FrameGenerator extends JPanel implements Runnable {
 
     private static final int    WIDTH               = 352;
     private static final int    HEIGHT              = 288;
@@ -38,7 +38,7 @@ public class SpaceInvaderAnimation extends JPanel implements Runnable {
     private final int[]           layerSpeeds  = {1, 2, 3}; // Different speeds for each layer
     private final double          orbitRadius  = 100.0; // Radius of the circular orbit
 
-    public SpaceInvaderAnimation () {
+    public FrameGenerator () {
 
         initializeStars();
         new Thread(this).start();
@@ -258,7 +258,7 @@ public class SpaceInvaderAnimation extends JPanel implements Runnable {
     public static void main (String[] args) {
 
         JFrame frame = new JFrame("Space Invader Animation");
-        SpaceInvaderAnimation animation = new SpaceInvaderAnimation();
+        FrameGenerator animation = new FrameGenerator();
         frame.add(animation);
         frame.setSize(WIDTH, HEIGHT);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

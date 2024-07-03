@@ -7,12 +7,11 @@ import java.io.IOException;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import javafx.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.ijntema.eric.bitstream.BigEndianBitOutputStream;
-import org.ijntema.eric.frames.SpaceInvaderAnimation;
+import org.ijntema.eric.frames.FrameGenerator;
 import org.ijntema.eric.streamers.UdpStreamer;
 
 import static org.ijntema.eric.constants.H261Constants.BLOCK_SIZE;
@@ -24,14 +23,13 @@ import static org.ijntema.eric.constants.H261Constants.PICTURE_HEIGHT;
 import static org.ijntema.eric.constants.H261Constants.PICTURE_WIDTH;
 import static org.ijntema.eric.constants.H261Constants.QUANT;
 import static org.ijntema.eric.constants.H261Constants.TOTAL_BLOCKS;
-import static org.ijntema.eric.constants.H261Constants.VLC_TABLE_TCOEFF;
 import static org.ijntema.eric.constants.H261Constants.ZIGZAG_ORDER;
 
 @Slf4j
 public class H261Encoder {
 
     private final UdpStreamer              udpStreamer    = new UdpStreamer();
-    private final SpaceInvaderAnimation    frameGenerator = new SpaceInvaderAnimation();
+    private final FrameGenerator           frameGenerator = new FrameGenerator();
     private final BigEndianBitOutputStream stream         = new BigEndianBitOutputStream(new ByteArrayOutputStream());
 
     public H261Encoder () throws SocketException {
