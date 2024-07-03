@@ -18,9 +18,9 @@ public class FrameGenerator extends JPanel implements Runnable {
     private static final int    TWINKLE_RATE        = 50;
     private static final int    LAYER_COUNT         = 3;
     private static final int    NUM_FRAMES          = 2;
-    private static final double ORBIT_SPEED         = 0.01; // Speed of orbit in radians per frame
+    private static final double ORBIT_SPEED         = 0.008; // Speed of orbit in radians per frame
     private static final Color  SPACE_INVADER_COLOR = Color.GREEN;
-    private static final Color  PLANET_COLOR        = new Color(8, 36, 94);
+    private static final Color  PLANET_COLOR        = new Color(143, 87, 90);
     private static final Color  CRATERS_COLOR       = Color.LIGHT_GRAY;
     private static final Color  BACKGROUND_COLOR    = new Color(29, 29, 29);
 
@@ -36,7 +36,7 @@ public class FrameGenerator extends JPanel implements Runnable {
     private final ArrayList<Star> stars        = new ArrayList<>();
     private final int[]           layerOffsets = new int[LAYER_COUNT];
     private final int[]           layerSpeeds  = {1, 2, 3}; // Different speeds for each layer
-    private final double          orbitRadius  = 100.0; // Radius of the circular orbit
+    private final double          orbitRadius  = 80.0; // Radius of the circular orbit
 
     public FrameGenerator () {
 
@@ -100,7 +100,7 @@ public class FrameGenerator extends JPanel implements Runnable {
         int planetY = calculatePlanetYPosition(); // Calculate current Y position of the planet
 
         g.setColor(PLANET_COLOR); // Dark blue planet
-        g.fillOval(planetX, planetY, 100, 100); // Draw planet
+        g.fillOval(planetX, planetY, 150, 150); // Draw planet
         g.setColor(CRATERS_COLOR);
         g.fillOval(planetX + 30, planetY + 30, 10, 10); // Crater 1
         g.fillOval(planetX + 40, planetY + 60, 20, 20); // Crater 2
