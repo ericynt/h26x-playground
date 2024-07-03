@@ -17,3 +17,4 @@
 ## Remarks
 - Made to understand how the algorithm works
 - Not intended for production use
+- Use this project at your own risk
