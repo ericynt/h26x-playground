@@ -4,7 +4,6 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,7 +31,7 @@ public class H261Encoder {
     private final FrameGenerator           frameGenerator = new FrameGenerator();
     private final BigEndianBitOutputStream stream         = new BigEndianBitOutputStream(new ByteArrayOutputStream());
 
-    public H261Encoder () throws SocketException {
+    public H261Encoder () {
 
         // Start the UDP streamer
         Thread t = new Thread(udpStreamer);
