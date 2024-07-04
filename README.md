@@ -22,4 +22,4 @@
 - Made to understand how the algorithm works
 - Not intended for production use
 - Use this project at your own risk
-- create test stream: 'ffmpeg -stream_loop 10 -re -i "page18-movie-4.3gp" -f h261 "udp://127.0.0.1:55555"'
+- Create test stream: 'ffmpeg -stream_loop 10 -re -i "page18-movie-4.3gp" -f h261 "udp://127.0.0.1:55555"'
