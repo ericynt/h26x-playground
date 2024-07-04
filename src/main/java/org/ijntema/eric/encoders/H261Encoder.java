@@ -48,7 +48,7 @@ public class H261Encoder {
 
     public void encode () throws IOException, InterruptedException {
 
-        // Only created I-frames at the moment
+        // Only creates I-frames at the moment
 
         // 0 - 31, increment for every Picture
         int temporalReferenceCount = 0;
