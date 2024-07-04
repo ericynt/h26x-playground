@@ -1,6 +1,6 @@
 # H.261 standard compliant video Encoder written in Java
 
-# Application structure
+## Application structure
 - FrameGenerator --[RGB frames]--> H261Encoder --[H261 packets]--> UdpStreamer --[UDP datagrams]--> 127.0.0.1:55555
 
 ## Features
