@@ -9,6 +9,10 @@
 - Serves data in UDP datagrams
 - Currently only supports I-frames
 
+## Future
+- P-frames support
+- Motion vectors support
+
 ## How to start
 - Install ffmpeg
 - Start H261 Encoder
