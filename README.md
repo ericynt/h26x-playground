@@ -16,7 +16,7 @@
 ## How to start
 - Install ffmpeg
 - Start H261 Encoder
-- Open stream with 'ffplay udp://127.0.0.1:55555 -loglevel debug' 
+- Open stream: 'ffplay udp://127.0.0.1:55555 -loglevel debug' 
 
 ## Remarks
 - Made to understand how the algorithm works
