@@ -298,7 +298,7 @@ public class H261Encoder {
     public double[][] dct (int[][] matrix) {
 
         int n = BLOCK_SIZE, m = BLOCK_SIZE;
-        double pi = 3.142857;
+        double pi = 3.1415926;
 
         int i, j, k, l;
 
