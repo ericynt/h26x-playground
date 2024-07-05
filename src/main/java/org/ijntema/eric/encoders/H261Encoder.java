@@ -305,21 +305,21 @@ public class H261Encoder {
     public double[][] dct (int[][] matrix) {
 
         double pi = 3.1415926;
-        double[][] result = new double[8][8];
-        int N = 8;
+        double[][] result = new double[BLOCK_SIZE][BLOCK_SIZE];
+        int n = BLOCK_SIZE;
 
-        for (int u = 0; u < N; u++) {
+        for (int u = 0; u < n; u++) {
 
-            for (int v = 0; v < N; v++) {
+            for (int v = 0; v < n; v++) {
 
                 double sum = 0.0;
-                for (int x = 0; x < N; x++) {
+                for (int x = 0; x < n; x++) {
 
-                    for (int y = 0; y < N; y++) {
+                    for (int y = 0; y < n; y++) {
 
                         sum += matrix[x][y] *
-                                Math.cos((2 * x + 1) * u * pi / (2 * N)) *
-                                Math.cos((2 * y + 1) * v * pi / (2 * N));
+                                Math.cos((2 * x + 1) * u * pi / (2 * n)) *
+                                Math.cos((2 * y + 1) * v * pi / (2 * n));
                     }
                 }
                 double cu = (u == 0) ? 1.0 / Math.sqrt(2) : 1.0;
