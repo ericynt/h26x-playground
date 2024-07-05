@@ -288,6 +288,20 @@ public class H261Encoder {
         }
     }
 
+    public int[][] transpose (int[][] matrix) {
+
+        int[][] transpose = new int[BLOCK_SIZE][BLOCK_SIZE];
+        for (int i = 0; i < 8; i++) {
+
+            for (int j = 0; j < 8; j++) {
+
+                transpose[i][j] = matrix[j][i];
+            }
+        }
+
+        return transpose;
+    }
+
     public double[][] dct (int[][] matrix) {
 
         double pi = 3.1415926;
@@ -315,20 +329,6 @@ public class H261Encoder {
         }
 
         return result;
-    }
-
-    public int[][] transpose (int[][] matrix) {
-
-        int[][] transpose = new int[BLOCK_SIZE][BLOCK_SIZE];
-        for (int i = 0; i < 8; i++) {
-
-            for (int j = 0; j < 8; j++) {
-
-               transpose[i][j] = matrix[j][i];
-            }
-        }
-
-        return transpose;
     }
 
     public int[][] quantize (double[][] matrix) {
