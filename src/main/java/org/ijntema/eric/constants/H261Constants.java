@@ -20,14 +20,15 @@ public class H261Constants {
     // YCbCr 4:2:0
     public static final int                                                TOTAL_BLOCKS                 = Y_BLOCKS_AMOUNT + CB_BLOCKS_AMOUNT + CR_BLOCKS_AMOUNT;
     public static final int                                                BLOCK_SIZE                   = 8;
+    public static final int                                                MACROBLOCK_SIZE              = 16;
     public static final Map<Integer, Pair<Integer, Integer>>               VLC_TABLE_MACROBLOCK_ADDRESS = new HashMap<>();
     public static final Map<Integer, Map<Integer, Pair<Integer, Integer>>> VLC_TABLE_TCOEFF;
     public static final int[][]                                            ZIGZAG_ORDER                 =
             {
-                    { 0,  1,  5,  6, 14, 15, 27, 28},
-                    { 2,  4,  7, 13, 16, 26, 29, 42},
-                    { 3,  8, 12, 17, 25, 30, 41, 43},
-                    { 9, 11, 18, 24, 31, 40, 44, 53},
+                    {0, 1, 5, 6, 14, 15, 27, 28},
+                    {2, 4, 7, 13, 16, 26, 29, 42},
+                    {3, 8, 12, 17, 25, 30, 41, 43},
+                    {9, 11, 18, 24, 31, 40, 44, 53},
                     {10, 19, 23, 32, 39, 45, 52, 54},
                     {20, 22, 33, 38, 46, 51, 55, 60},
                     {21, 34, 37, 47, 50, 56, 59, 61},

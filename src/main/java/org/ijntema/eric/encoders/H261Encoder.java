@@ -18,6 +18,7 @@ import static org.ijntema.eric.constants.H261Constants.GOB_COLUMNS;
 import static org.ijntema.eric.constants.H261Constants.GOB_ROWS;
 import static org.ijntema.eric.constants.H261Constants.MACROBLOCK_COLUMNS;
 import static org.ijntema.eric.constants.H261Constants.MACROBLOCK_ROWS;
+import static org.ijntema.eric.constants.H261Constants.MACROBLOCK_SIZE;
 import static org.ijntema.eric.constants.H261Constants.PICTURE_HEIGHT;
 import static org.ijntema.eric.constants.H261Constants.PICTURE_WIDTH;
 import static org.ijntema.eric.constants.H261Constants.QUANT;
@@ -214,8 +215,8 @@ public class H261Encoder {
     ) {
 
         return new Pair<>(
-                ((gobColumn * MACROBLOCK_COLUMNS) + macroblockColumn) * 16,
-                ((gobRow * MACROBLOCK_ROWS) + macroblockRow) * 16
+                ((gobColumn * MACROBLOCK_COLUMNS) + macroblockColumn) * MACROBLOCK_SIZE,
+                ((gobRow * MACROBLOCK_ROWS) + macroblockRow) * MACROBLOCK_SIZE
         );
     }
 
@@ -232,9 +233,9 @@ public class H261Encoder {
         int[][] crAccumulators = new int[BLOCK_SIZE][BLOCK_SIZE];
         int[][] countAccumulators = new int[BLOCK_SIZE][BLOCK_SIZE];
 
-        for (int i = pixelRowAndColumn.getKey(); i < pixelRowAndColumn.getKey() + 16; i++) {
+        for (int i = pixelRowAndColumn.getKey(); i < pixelRowAndColumn.getKey() + MACROBLOCK_SIZE; i++) {
 
-            for (int j = pixelRowAndColumn.getValue(); j < pixelRowAndColumn.getValue() + 16; j++) {
+            for (int j = pixelRowAndColumn.getValue(); j < pixelRowAndColumn.getValue() + MACROBLOCK_SIZE; j++) {
 
                 int x = i % 16;
                 int y = j % 16;
@@ -479,9 +480,9 @@ public class H261Encoder {
 
 //                if (!foundInVlcTable) { // Fixed length code
 
-                    this.stream.write(0b0000_01, 6); // ESCAPE (6 bits)
-                    this.stream.write(run, 6); // RUN (6 bits)
-                    this.stream.write(level, 8); // LEVEL (8 bits)
+                this.stream.write(0b0000_01, 6); // ESCAPE (6 bits)
+                this.stream.write(run, 6); // RUN (6 bits)
+                this.stream.write(level, 8); // LEVEL (8 bits)
 //                }
             }
         }
