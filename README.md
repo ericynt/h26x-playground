@@ -27,3 +27,4 @@ On the left the RGB input frame, on the right the H.261 encoded and then decoded
 - Made to understand how the algorithm works
 - Not intended for production use
 - Use this project at your own risk
+- By updating the Quant in H261Constants the amount of compression can be adjusted
