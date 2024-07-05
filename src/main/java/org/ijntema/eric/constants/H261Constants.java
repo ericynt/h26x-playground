@@ -35,18 +35,6 @@ public class H261Constants {
                     {35, 36, 48, 49, 57, 58, 62, 63}
             };
 
-    public static final int[] TEST_MATRIX =
-            {
-                    254, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0,
-                    };
-
     static {
 
         VLC_TABLE_MACROBLOCK_ADDRESS.put(1, new Pair<>(0b1, 1));

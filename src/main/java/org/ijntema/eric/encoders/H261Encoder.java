@@ -243,20 +243,16 @@ public class H261Encoder {
                 // Y component
                 if (x < 8 && y < 8) {
 
-                    // Bottom left
-                    blocks[2][x][y] = yCbCr[i][j][0];
+                    blocks[0][x][y] = yCbCr[i][j][0];
                 } else if (x < 8) {
 
-                    // Top left
-                    blocks[0][x][y - 8] = yCbCr[i][j][0];
+                    blocks[2][x][y - 8] = yCbCr[i][j][0];
                 } else if (y < 8) {
 
-                    // Bottom right
-                    blocks[3][x - 8][y] = yCbCr[i][j][0];
+                    blocks[1][x - 8][y] = yCbCr[i][j][0];
                 } else {
 
-                    // Top right
-                    blocks[1][x - 8][y - 8] = yCbCr[i][j][0];
+                    blocks[3][x - 8][y - 8] = yCbCr[i][j][0];
                 }
 
                 // Cb and Cr components
@@ -287,7 +283,8 @@ public class H261Encoder {
         for (int i = 0; i < TOTAL_BLOCKS; i++) {
 
             int[][] block = blocks[i];
-            double[][] dctBlock = this.dct(block);
+            int[][] transpose = this.transpose(block);
+            double[][] dctBlock = this.dct(transpose);
             int[][] quantizedBlock = this.quantize(dctBlock);
             int[] zigzagOrderSequence = this.zigzag(quantizedBlock);
             int[] runLengthedSequence = this.runLength(zigzagOrderSequence);
@@ -298,56 +295,45 @@ public class H261Encoder {
 
     public double[][] dct (int[][] matrix) {
 
-        int n = BLOCK_SIZE, m = BLOCK_SIZE;
         double pi = 3.1415926;
+        double[][] result = new double[8][8];
+        int N = 8;
 
-        int i, j, k, l;
+        for (int u = 0; u < N; u++) {
 
-        // dct will store the discrete cosine transform
-        double[][] dctBlock = new double[m][n];
+            for (int v = 0; v < N; v++) {
 
-        double ci, cj, dct, sum;
+                double sum = 0.0;
+                for (int x = 0; x < N; x++) {
 
-        for (i = 0; i < m; i++) {
+                    for (int y = 0; y < N; y++) {
 
-            for (j = 0; j < n; j++) {
-
-                // ci and cj depends on frequency as well as
-                // number of row and columns of specified matrix
-                if (i == 0) {
-
-                    ci = 1 / Math.sqrt(m);
-                } else {
-
-                    ci = Math.sqrt(2) / Math.sqrt(m);
-                }
-
-                if (j == 0) {
-
-                    cj = 1 / Math.sqrt(n);
-                } else {
-
-                    cj = Math.sqrt(2) / Math.sqrt(n);
-                }
-
-                // sum will temporarily store the sum of
-                // cosine signals
-                sum = 0;
-                for (k = 0; k < m; k++) {
-
-                    for (l = 0; l < n; l++) {
-
-                        dct = matrix[k][l] *
-                                Math.cos((2 * k + 1) * i * pi / (2 * m)) *
-                                Math.cos((2 * l + 1) * j * pi / (2 * n));
-                        sum = sum + dct;
+                        sum += matrix[x][y] *
+                                Math.cos((2 * x + 1) * u * pi / (2 * N)) *
+                                Math.cos((2 * y + 1) * v * pi / (2 * N));
                     }
                 }
-                dctBlock[i][j] = ci * cj * sum;
+                double cu = (u == 0) ? 1.0 / Math.sqrt(2) : 1.0;
+                double cv = (v == 0) ? 1.0 / Math.sqrt(2) : 1.0;
+                result[u][v] = 0.25 * cu * cv * sum;
             }
         }
 
-        return dctBlock;
+        return result;
+    }
+
+    public int[][] transpose (int[][] matrix) {
+
+        int[][] transpose = new int[BLOCK_SIZE][BLOCK_SIZE];
+        for (int i = 0; i < 8; i++) {
+
+            for (int j = 0; j < 8; j++) {
+
+               transpose[i][j] = matrix[j][i];
+            }
+        }
+
+        return transpose;
     }
 
     public int[][] quantize (double[][] matrix) {
@@ -456,7 +442,7 @@ public class H261Encoder {
                     level = 1;
                 }
 
-                // See the standard documentation
+//                // See the standard documentation
                 if (level == 128) {
 
                     this.stream.write(0b1111_1111, 8);
