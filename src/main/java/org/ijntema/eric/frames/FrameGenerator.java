@@ -23,7 +23,7 @@ public class FrameGenerator extends JPanel implements Runnable {
     private static final int    NUM_FRAMES          = 2;
     private static final double ORBIT_SPEED         = 0.008; // Speed of orbit in radians per frame
     private static final Color  SPACE_INVADER_COLOR = Color.GREEN;
-    private static final Color  PLANET_COLOR        = new Color(143, 87, 90);
+    private static final Color  PLANET_COLOR        = new Color(131, 131, 131);
     private static final Color  CRATERS_COLOR       = Color.LIGHT_GRAY;
     private static final Color  BACKGROUND_COLOR    = new Color(29, 29, 29);
 
