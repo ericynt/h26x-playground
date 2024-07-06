@@ -32,8 +32,7 @@ public class H261Encoder {
     private final FrameGenerator           frameGenerator = new FrameGenerator();
     private final BigEndianBitOutputStream stream         = new BigEndianBitOutputStream(new ByteArrayOutputStream());
 
-    int compressedByteCount = 0;
-    int uncompressedByteCount = 0;
+    int compressedBitCount = 0;
 
     public H261Encoder () {
 
@@ -56,25 +55,31 @@ public class H261Encoder {
 
         // 0 - 31, increment for every Picture
         int temporalReferenceCount = 0;
-        double spaceSaving = 0.0;
+        double bitrate = 0.0;
+        long millisCount = 0;
 
         try {
 
             while (true) {
+
+                long start = System.currentTimeMillis();
 
                 if (temporalReferenceCount == 32) {
 
                     temporalReferenceCount = 0;
                 }
 
-                if (uncompressedByteCount != 0 && compressedByteCount != 0) {
+                if (millisCount > 1000) {
 
-                    spaceSaving = (Math.floor(((1 - ((double) compressedByteCount / uncompressedByteCount)) * 100) * 100) / 100);
+                    double newBitRate = (((double) millisCount / 1000) * compressedBitCount) / 1000;
+                    bitrate = newBitRate > 0 ? newBitRate : bitrate;
+
+                    millisCount = 0;
+                    compressedBitCount = 0;
                 }
 
-                String spaceSavingString = String.format("Space saving: %s", spaceSaving) + "%";
-
-                int[][][] yCbCrMatrix = rgbToYCbCr(this.frameGenerator.generateFrame(spaceSavingString));
+                String bitrateString = String.format("bitrate: %.0f kbit/s", bitrate);
+                int[][][] yCbCrMatrix = rgbToYCbCr(this.frameGenerator.generateFrame(bitrateString));
 
                 for (int i = 0; i < GOB_ROWS; i++) {
 
@@ -95,10 +100,6 @@ public class H261Encoder {
 
                                     // Reset the stream
                                     ((ByteArrayOutputStream) this.stream.getOutputStream()).reset();
-
-                                    // Reset byte counters
-                                    this.compressedByteCount = 0;
-                                    this.uncompressedByteCount = 0;
                                 }
                             }
                         }
@@ -112,6 +113,7 @@ public class H261Encoder {
                 Thread.sleep(1000 / 31);
 
                 temporalReferenceCount++;
+                millisCount += System.currentTimeMillis() - start;
             }
         } finally {
 
@@ -314,8 +316,6 @@ public class H261Encoder {
             }
         }
 
-        this.uncompressedByteCount += 4 * matrix.length;
-
         return transpose;
     }
 
@@ -464,7 +464,7 @@ public class H261Encoder {
                     this.stream.write(level, 8);
                 }
 
-                this.compressedByteCount += 8;
+                this.compressedBitCount += 8;
             } else { // AC
 
 //                boolean foundInVlcTable = false;
@@ -485,7 +485,7 @@ public class H261Encoder {
                 this.stream.write(run, 6); // RUN (6 bits)
                 this.stream.write(level, 8); // LEVEL (8 bits)
 
-                this.compressedByteCount += 20;
+                this.compressedBitCount += 20;
 //                }
             }
         }
