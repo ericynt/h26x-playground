@@ -19,8 +19,9 @@ On the left the RGB input frame, on the right the H.261 encoded and then decoded
 - Motion vectors support
 
 ## How to start
-- Install ffmpeg
+- mvn clean install
 - Start H261 Encoder
+- Install ffmpeg
 - Open stream: 'ffplay udp://127.0.0.1:55555 -loglevel debug' 
 
 ## Remarks
