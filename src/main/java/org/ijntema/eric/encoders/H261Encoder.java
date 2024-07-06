@@ -59,6 +59,8 @@ public class H261Encoder {
         double bitrate = 0.0;
         double spaceSaving = 0.0;
         long millisCount = 0;
+        int ppsCount = 0;
+        int pps = 0;
 
         try {
 
@@ -75,15 +77,21 @@ public class H261Encoder {
 
                     bitrate = (((double) millisCount / 1000) * compressedBitCount) / 1000;
                     spaceSaving = (1 - ((double) compressedBitCount / unCompressedBitCount)) * 100;
+                    pps = (int) ((double) millisCount / 1000) * ppsCount;
 
                     millisCount = 0;
                     compressedBitCount = 0;
                     unCompressedBitCount = 0;
+                    ppsCount = 0;
                 }
 
-                String bitrateString = String.format("net bitrate: %.0f kbit/s", bitrate);
-                String spaceSavingString = String.format("space saving: %.2f", spaceSaving) + "%";
-                int[][][] yCbCrMatrix = rgbToYCbCr(this.frameGenerator.generateFrame(bitrateString + "\n" + spaceSavingString));
+                String bitrateString = String.format("Net bitrate: %.0f kbit/s", bitrate);
+                String spaceSavingString = String.format("Space saving: %.2f", spaceSaving) + "%";
+                String ppsString = String.format("PPS: %s", pps);
+                int[][][] yCbCrMatrix = rgbToYCbCr(
+                        this.frameGenerator
+                                .generateFrame(bitrateString + "\n" + spaceSavingString + "\n" + ppsString)
+                );
 
                 for (int i = 0; i < GOB_ROWS; i++) {
 
@@ -104,6 +112,7 @@ public class H261Encoder {
 
                                     // Reset the stream
                                     ((ByteArrayOutputStream) this.stream.getOutputStream()).reset();
+                                    ppsCount++;
                                 }
                             }
                         }
