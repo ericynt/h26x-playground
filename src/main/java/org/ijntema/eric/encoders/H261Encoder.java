@@ -106,7 +106,12 @@ public class H261Encoder {
                                 byte[] h261Packet = ((ByteArrayOutputStream) this.stream.getOutputStream()).toByteArray();
 
                                 // Send macroblocks when they are byte aligned
-                                if (this.stream.getBufferBitCount() == 0 || h261Packet.length > 1200) {
+                                if (this.stream.getBufferBitCount() == 0) {
+
+                                    if (h261Packet.length > 1400) {
+
+                                        log.warn("Packet bigger than 1400 bytes: {}", h261Packet.length);
+                                    }
 
                                     this.udpStreamer.getPacketQueue().add(h261Packet);
 
