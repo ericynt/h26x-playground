@@ -32,6 +32,8 @@ public class H261Encoder {
     private final FrameGenerator           frameGenerator = new FrameGenerator();
     private final BigEndianBitOutputStream stream         = new BigEndianBitOutputStream(new ByteArrayOutputStream());
 
+    int compressedBitCount = 0;
+
     public H261Encoder () {
 
         // Start the UDP streamer
@@ -53,17 +55,31 @@ public class H261Encoder {
 
         // 0 - 31, increment for every Picture
         int temporalReferenceCount = 0;
+        double bitrate = 0.0;
+        long millisCount = 0;
 
         try {
 
             while (true) {
+
+                long start = System.currentTimeMillis();
 
                 if (temporalReferenceCount == 32) {
 
                     temporalReferenceCount = 0;
                 }
 
-                int[][][] yCbCrMatrix = rgbToYCbCr(this.frameGenerator.generateFrame());
+                if (millisCount > 1000) {
+
+                    double newBitRate = (((double) millisCount / 1000) * compressedBitCount) / 1000;
+                    bitrate = newBitRate > 0 ? newBitRate : bitrate;
+
+                    millisCount = 0;
+                    compressedBitCount = 0;
+                }
+
+                String bitrateString = String.format("bitrate: %.0f kbit/s", bitrate);
+                int[][][] yCbCrMatrix = rgbToYCbCr(this.frameGenerator.generateFrame(bitrateString));
 
                 for (int i = 0; i < GOB_ROWS; i++) {
 
@@ -97,6 +113,7 @@ public class H261Encoder {
                 Thread.sleep(1000 / 31);
 
                 temporalReferenceCount++;
+                millisCount += System.currentTimeMillis() - start;
             }
         } finally {
 
@@ -446,6 +463,8 @@ public class H261Encoder {
 
                     this.stream.write(level, 8);
                 }
+
+                this.compressedBitCount += 8;
             } else { // AC
 
 //                boolean foundInVlcTable = false;
@@ -465,6 +484,8 @@ public class H261Encoder {
                 this.stream.write(0b0000_01, 6); // ESCAPE (6 bits)
                 this.stream.write(run, 6); // RUN (6 bits)
                 this.stream.write(level, 8); // LEVEL (8 bits)
+
+                this.compressedBitCount += 20;
 //                }
             }
         }
