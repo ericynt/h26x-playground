@@ -78,7 +78,7 @@ public class H261Encoder {
                     compressedBitCount = 0;
                 }
 
-                String bitrateString = String.format("bitrate: %.0f kbit/s", bitrate);
+                String bitrateString = String.format("net bitrate: %.0f kbit/s", bitrate);
                 int[][][] yCbCrMatrix = rgbToYCbCr(this.frameGenerator.generateFrame(bitrateString));
 
                 for (int i = 0; i < GOB_ROWS; i++) {
