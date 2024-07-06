@@ -123,7 +123,7 @@ public class H261Encoder {
                 // ~30 fps (spec: frame rate (i.e. 30000/1001 or approx. 29.97 Hz))
                 // Creating the packet also takes time, so the frame rate is not exactly 30 fps
                 // H.261 supports 176x144 and 352x288 frames at target frame rates of 7.5 to 30 fps
-//                Thread.sleep(1000 / 31);
+                Thread.sleep(1000 / 31);
 
                 temporalReferenceCount++;
                 millisCount += System.currentTimeMillis() - start;
