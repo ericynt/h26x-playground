@@ -32,7 +32,8 @@ public class H261Encoder {
     private final FrameGenerator           frameGenerator = new FrameGenerator();
     private final BigEndianBitOutputStream stream         = new BigEndianBitOutputStream(new ByteArrayOutputStream());
 
-    int compressedBitCount = 0;
+    int compressedBitCount   = 0;
+    int unCompressedBitCount = 0;
 
     public H261Encoder () {
 
@@ -56,6 +57,7 @@ public class H261Encoder {
         // 0 - 31, increment for every Picture
         int temporalReferenceCount = 0;
         double bitrate = 0.0;
+        double spaceSaving = 0.0;
         long millisCount = 0;
 
         try {
@@ -71,15 +73,17 @@ public class H261Encoder {
 
                 if (millisCount > 1000) {
 
-                    double newBitRate = (((double) millisCount / 1000) * compressedBitCount) / 1000;
-                    bitrate = newBitRate > 0 ? newBitRate : bitrate;
+                    bitrate = (((double) millisCount / 1000) * compressedBitCount) / 1000;
+                    spaceSaving = (1 - ((double) compressedBitCount / unCompressedBitCount)) * 100;
 
                     millisCount = 0;
                     compressedBitCount = 0;
+                    unCompressedBitCount = 0;
                 }
 
                 String bitrateString = String.format("net bitrate: %.0f kbit/s", bitrate);
-                int[][][] yCbCrMatrix = rgbToYCbCr(this.frameGenerator.generateFrame(bitrateString));
+                String spaceSavingString = String.format("space saving: %.0f", spaceSaving) + "%";
+                int[][][] yCbCrMatrix = rgbToYCbCr(this.frameGenerator.generateFrame(bitrateString + "\n" + spaceSavingString));
 
                 for (int i = 0; i < GOB_ROWS; i++) {
 
@@ -174,6 +178,8 @@ public class H261Encoder {
         // Every macroblok is sent in a separate packet
         this.writeMacroblockHeader(macroblockRow, macroblockColumn);
         this.writeMacroblock(blocks);
+
+        this.unCompressedBitCount += 6 * 8 * 8 * 32;
     }
 
     private void writePictureHeader (int temporalReference) throws IOException {

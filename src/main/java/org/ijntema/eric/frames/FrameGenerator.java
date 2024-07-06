@@ -168,7 +168,7 @@ public class FrameGenerator extends JPanel implements Runnable {
         // Draw each line of the text
         for (String line : lines) {
             int textWidth = g.getFontMetrics().stringWidth(line);
-            g.drawString(line, WIDTH - 225, y); // Draw 195 pixels from the right edge
+            g.drawString(line, 16, y); // Draw 195 pixels from the right edge
             y += lineHeight;
         }
     }
