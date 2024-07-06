@@ -63,7 +63,7 @@ public class H261Encoder {
                     temporalReferenceCount = 0;
                 }
 
-                int[][][] yCbCrMatrix = rgbToYCbCr(this.frameGenerator.generateFrame("TEST"));
+                int[][][] yCbCrMatrix = rgbToYCbCr(this.frameGenerator.generateFrame());
 
                 for (int i = 0; i < GOB_ROWS; i++) {
 
