@@ -413,6 +413,7 @@ public class H261Encoder {
 
         int[] result = new int[encoded.size()];
         for (int i = 0; i < encoded.size(); i++) {
+
             result[i] = encoded.get(i);
         }
 
@@ -447,7 +448,7 @@ public class H261Encoder {
                 }
             } else { // AC
 
-                boolean foundInVlcTable = false;
+//                boolean foundInVlcTable = false;
 //                Map<Integer, Pair<Integer, Integer>> runMap = VLC_TABLE_TCOEFF.get(run);
 //                if (runMap != null) {
 //
