@@ -32,6 +32,9 @@ public class H261Encoder {
     private final FrameGenerator           frameGenerator = new FrameGenerator();
     private final BigEndianBitOutputStream stream         = new BigEndianBitOutputStream(new ByteArrayOutputStream());
 
+    int compressedByteCount = 0;
+    int uncompressedByteCount = 0;
+
     public H261Encoder () {
 
         // Start the UDP streamer
@@ -53,6 +56,7 @@ public class H261Encoder {
 
         // 0 - 31, increment for every Picture
         int temporalReferenceCount = 0;
+        double spaceSaving = 0.0;
 
         try {
 
@@ -63,7 +67,14 @@ public class H261Encoder {
                     temporalReferenceCount = 0;
                 }
 
-                int[][][] yCbCrMatrix = rgbToYCbCr(this.frameGenerator.generateFrame());
+                if (uncompressedByteCount != 0 && compressedByteCount != 0) {
+
+                    spaceSaving = (Math.floor(((1 - ((double) compressedByteCount / uncompressedByteCount)) * 100) * 100) / 100);
+                }
+
+                String spaceSavingString = String.format("Space saving: %s", spaceSaving) + "%";
+
+                int[][][] yCbCrMatrix = rgbToYCbCr(this.frameGenerator.generateFrame(spaceSavingString));
 
                 for (int i = 0; i < GOB_ROWS; i++) {
 
@@ -84,6 +95,10 @@ public class H261Encoder {
 
                                     // Reset the stream
                                     ((ByteArrayOutputStream) this.stream.getOutputStream()).reset();
+
+                                    // Reset byte counters
+                                    this.compressedByteCount = 0;
+                                    this.uncompressedByteCount = 0;
                                 }
                             }
                         }
@@ -299,6 +314,8 @@ public class H261Encoder {
             }
         }
 
+        this.uncompressedByteCount += 4 * matrix.length;
+
         return transpose;
     }
 
@@ -446,6 +463,8 @@ public class H261Encoder {
 
                     this.stream.write(level, 8);
                 }
+
+                this.compressedByteCount += 8;
             } else { // AC
 
 //                boolean foundInVlcTable = false;
@@ -465,6 +484,8 @@ public class H261Encoder {
                 this.stream.write(0b0000_01, 6); // ESCAPE (6 bits)
                 this.stream.write(run, 6); // RUN (6 bits)
                 this.stream.write(level, 8); // LEVEL (8 bits)
+
+                this.compressedByteCount += 20;
 //                }
             }
         }

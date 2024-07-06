@@ -34,6 +34,7 @@ public class FrameGenerator extends JPanel implements Runnable {
     private int    animationFrame = 0;
     private int    twinkleCounter = 0;
     private double currentAngle   = 0.0; // Current angle in radians
+    private String displayText    = ""; // Text to be displayed in the upper right corner
 
     private final Random          random       = new Random();
     private final ArrayList<Star> stars        = new ArrayList<>();
@@ -63,6 +64,7 @@ public class FrameGenerator extends JPanel implements Runnable {
         Graphics g = image.getGraphics();
         drawBackground(g);
         drawSpaceInvader(g, invaderX, invaderY, animationFrame);
+        drawText(g, displayText); // Draw the text in the upper right corner
         g.dispose();
 
         return image;
@@ -151,6 +153,26 @@ public class FrameGenerator extends JPanel implements Runnable {
         }
     }
 
+    private void drawText (Graphics g, String text) {
+
+        g.setColor(Color.WHITE);
+        g.setFont(new Font("Consolas", Font.PLAIN, 16));
+
+        // Split the text into lines by newline characters
+        String[] lines = text.split("\n");
+        int lineHeight = g.getFontMetrics().getHeight();
+
+        // Calculate the starting y position for the text to appear at the top
+        int y = 25; // Small margin from the top
+
+        // Draw each line of the text
+        for (String line : lines) {
+            int textWidth = g.getFontMetrics().stringWidth(line);
+            g.drawString(line, WIDTH - 195, y); // Draw 195 pixels from the right edge
+            y += lineHeight;
+        }
+    }
+
     @Override
     protected void paintComponent (Graphics g) {
 
@@ -193,6 +215,13 @@ public class FrameGenerator extends JPanel implements Runnable {
         animationFrame = (animationFrame + 1) % NUM_FRAMES;
 
         return frame;
+    }
+
+    // Method to generate a frame and return it as BufferedImage with text
+    public BufferedImage generateFrame (String text) {
+
+        this.displayText = text;
+        return generateFrame();
     }
 
     private void updateInvaderPosition () {
