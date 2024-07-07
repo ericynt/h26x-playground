@@ -492,6 +492,8 @@ public class H261Encoder {
 
                         foundInVlcTable = true;
                         this.stream.write(codeAndBitsPair.getKey(), codeAndBitsPair.getValue());
+
+                        this.compressedBitCount += codeAndBitsPair.getValue();
                     }
                 }
 
