@@ -57,10 +57,8 @@ public class H261Encoder {
         // 0 - 31, increment for every Picture
         int temporalReferenceCount = 0;
         double bitrate = 0.0;
-        double spaceSaving = 0.0;
+        double compressionRatio = 0.0;
         long millisCount = 0;
-        int ppsCount = 0;
-        int pps = 0;
 
         try {
 
@@ -76,21 +74,18 @@ public class H261Encoder {
                 if (millisCount > 1000) {
 
                     bitrate = (((double) millisCount / 1000) * compressedBitCount) / 1000;
-                    spaceSaving = (1 - ((double) compressedBitCount / unCompressedBitCount)) * 100;
-                    pps = (int) ((double) millisCount / 1000) * ppsCount;
+                    compressionRatio = (((double) unCompressedBitCount / compressedBitCount));
 
                     millisCount = 0;
                     compressedBitCount = 0;
                     unCompressedBitCount = 0;
-                    ppsCount = 0;
                 }
 
-                String bitrateString = String.format("Net bitrate: %.0f kbit/s", bitrate);
-                String spaceSavingString = String.format("Space saving: %.2f", spaceSaving) + "%";
-                String ppsString = String.format("PPS: %s", pps);
+                String bitrateString = String.format("Bitrate: %.0f kbit/s", bitrate);
+                String spaceSavingString = String.format("Compr. ratio: %.0f:1", compressionRatio);
                 int[][][] yCbCrMatrix = rgbToYCbCr(
                         this.frameGenerator
-                                .generateFrame(bitrateString + "\n" + spaceSavingString + "\n" + ppsString)
+                                .generateFrame(bitrateString + "\n" + spaceSavingString)
                 );
 
                 for (int i = 0; i < GOB_ROWS; i++) {
@@ -117,7 +112,6 @@ public class H261Encoder {
 
                                     // Reset the stream
                                     ((ByteArrayOutputStream) this.stream.getOutputStream()).reset();
-                                    ppsCount++;
                                 }
                             }
                         }
