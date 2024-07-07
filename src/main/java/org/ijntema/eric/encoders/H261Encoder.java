@@ -372,35 +372,23 @@ public class H261Encoder {
 
             for (int j = 0; j < BLOCK_SIZE; j++) {
 
+                // Apply DC step size for the top-left element.
                 if (i == 0 && j == 0) {
 
-                    // Apply DC step size for the top-left element.
-                    // Not sure if ronding up or down is better
-                    quantized[i][j] = (int) Math.round((matrix[i][j] / DC_step_size));
-                    //  quantized[i][j] = (int) matrix[i][j] / DC_step_size;
+                    // Round down
+                    quantized[i][j] = (int) (matrix[i][j] / DC_step_size);
                 } else {
 
-                    // rec = quant * (2 * level + 1); level > 0
-                    // rec / quant = 2 * level + 1
-                    // rec / quant) -1 = 2 * level
-                    // rec / quant) -1) / 2 = level
-                    //
-                    // rec = quant * (2 * level - 1); level < 0
-                    // rec / quant = 2 * level - 1
-                    // (rec / quant) + 1 = 2 * level
-                    // ((rec / quant) + 1) / 2 = level
                     // Apply AC step size for the other elements.
                     double coeff = matrix[i][j];
                     if (coeff < 0) {
 
-                        // quantized[i][j] = (int) (((coeff) / QUANT) + 1) / 2;
-                        // Not sure if ronding up or down is better
-                        quantized[i][j] = (int) Math.round((((coeff) / QUANT) + 1) / 2);
+                        // Round down
+                        quantized[i][j] = (int) ((((coeff) / QUANT) + 1) / 2);
                     } else {
 
-                        // quantized[i][j] = (int) (((coeff) / QUANT) - 1) / 2;
-                        // Not sure if ronding up or down is better
-                        quantized[i][j] = (int) Math.round((((coeff) / QUANT) - 1) / 2);
+                        // Round down
+                        quantized[i][j] = (int) ((((coeff) / QUANT) - 1) / 2);
                     }
                 }
             }
