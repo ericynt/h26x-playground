@@ -483,6 +483,14 @@ public class H261Encoder {
 
 //                if (!foundInVlcTable) { // Fixed length code
 
+                if (level < -127) {
+
+                    level = -127;
+                } else if (level > 127) {
+
+                    level = 127;
+                }
+
                 this.stream.write(0b0000_01, 6); // ESCAPE (6 bits)
                 this.stream.write(run, 6); // RUN (6 bits)
                 this.stream.write(level, 8); // LEVEL (8 bits)

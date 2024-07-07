@@ -11,21 +11,25 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class FrameGenerator extends JPanel implements Runnable {
 
-    private static final int    WIDTH               = 352;
-    private static final int    HEIGHT              = 288;
-    private static final int    FRAME_RATE          = 30;
-    private static final int    INVADER_WIDTH       = 40;
-    private static final int    INVADER_HEIGHT      = 30;
-    private static final int    INVADER_STEP        = 5;
-    private static final int    STAR_COUNT          = 25;
-    private static final int    TWINKLE_RATE        = 50;
-    private static final int    LAYER_COUNT         = 3;
-    private static final int    NUM_FRAMES          = 2;
-    private static final double ORBIT_SPEED         = 0.008; // Speed of orbit in radians per frame
-    private static final Color  SPACE_INVADER_COLOR = Color.GREEN;
-    private static final Color  PLANET_COLOR        = new Color(131, 131, 131);
-    private static final Color  CRATERS_COLOR       = Color.LIGHT_GRAY;
-    private static final Color  BACKGROUND_COLOR    = new Color(29, 29, 29);
+    private static final int    WIDTH                 = 352;
+    private static final int    HEIGHT                = 288;
+    private static final int    FRAME_RATE            = 30;
+    private static final int    INVADER_WIDTH         = 40;
+    private static final int    INVADER_HEIGHT        = 30;
+    private static final int    INVADER_STEP          = 5;
+    private static final int    STAR_COUNT            = 25;
+    private static final int    TWINKLE_RATE          = 50;
+    private static final int    LAYER_COUNT           = 3;
+    private static final int    NUM_FRAMES            = 2;
+    private static final double ORBIT_SPEED           = 0.008; // Speed of orbit in radians per frame
+    private static final Color  SPACE_INVADER_COLOR   = Color.GREEN;
+    private static final Color  PLANET_COLOR          = new Color(131, 131, 131);
+    private static final Color  CRATERS_COLOR         = Color.LIGHT_GRAY;
+    private static final Color  BACKGROUND_COLOR      = new Color(29, 29, 29);
+    private static final Color  TEXT_BACKGROUND_COLOR = new Color(29, 29, 29);
+    private static final Font   TEXT_FONT             = new Font("Consolas", Font.PLAIN, 16);
+    private static final Color  TEXT_COLOR            = Color.WHITE;
+    private static final Color  STAR_COLOR            = Color.WHITE;
 
     private int    invaderX       = 0;
     private int    invaderY       = HEIGHT / 2 - INVADER_HEIGHT / 2;
@@ -91,7 +95,7 @@ public class FrameGenerator extends JPanel implements Runnable {
         // Draw stars for each layer
         for (Star star : stars) {
 
-            g.setColor(Color.WHITE);
+            g.setColor(STAR_COLOR);
             int starX = star.x + offset / (layer + 1); // Move slower for farther layers
             if (starX >= WIDTH) {
 
@@ -155,9 +159,6 @@ public class FrameGenerator extends JPanel implements Runnable {
 
     private void drawText (Graphics g, String text) {
 
-        g.setColor(Color.WHITE);
-        g.setFont(new Font("Consolas", Font.PLAIN, 16));
-
         // Split the text into lines by newline characters
         String[] lines = text.split("\n");
         int lineHeight = g.getFontMetrics().getHeight();
@@ -165,10 +166,16 @@ public class FrameGenerator extends JPanel implements Runnable {
         // Calculate the starting y position for the text to appear at the top
         int y = 25; // Small margin from the top
 
+        g.setColor(TEXT_BACKGROUND_COLOR);
+        g.fillRect(10, 10, 190, (lineHeight + 3) * lines.length);
+
+        g.setColor(TEXT_COLOR);
+        g.setFont(TEXT_FONT);
+
         // Draw each line of the text
         for (String line : lines) {
             int textWidth = g.getFontMetrics().stringWidth(line);
-            g.drawString(line, 16, y); // Draw 195 pixels from the right edge
+            g.drawString(line, 16, y);
             y += lineHeight;
         }
     }
