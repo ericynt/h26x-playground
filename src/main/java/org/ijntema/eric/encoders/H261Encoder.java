@@ -6,6 +6,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import javafx.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ import static org.ijntema.eric.constants.H261Constants.PICTURE_HEIGHT;
 import static org.ijntema.eric.constants.H261Constants.PICTURE_WIDTH;
 import static org.ijntema.eric.constants.H261Constants.QUANT;
 import static org.ijntema.eric.constants.H261Constants.TOTAL_BLOCKS;
+import static org.ijntema.eric.constants.H261Constants.VLC_TABLE_TCOEFF;
 import static org.ijntema.eric.constants.H261Constants.ZIGZAG_ORDER;
 
 @Slf4j
@@ -481,26 +483,26 @@ public class H261Encoder {
                 this.compressedBitCount += 8;
             } else { // AC
 
-//                boolean foundInVlcTable = false;
-//                Map<Integer, Pair<Integer, Integer>> runMap = VLC_TABLE_TCOEFF.get(run);
-//                if (runMap != null) {
-//
-//                    Pair<Integer, Integer> codeAndBitsPair = runMap.get(level);
-//                    if (codeAndBitsPair != null) {
-//
-//                        foundInVlcTable = true;
-//                        this.stream.write(codeAndBitsPair.getKey(), codeAndBitsPair.getValue());
-//                    }
-//                }
+                boolean foundInVlcTable = false;
+                Map<Integer, Pair<Integer, Integer>> runMap = VLC_TABLE_TCOEFF.get(run);
+                if (runMap != null) {
 
-//                if (!foundInVlcTable) { // Fixed length code
+                    Pair<Integer, Integer> codeAndBitsPair = runMap.get(level);
+                    if (codeAndBitsPair != null) {
 
-                this.stream.write(0b0000_01, 6); // ESCAPE (6 bits)
-                this.stream.write(run, 6); // RUN (6 bits)
-                this.stream.write(level, 8); // LEVEL (8 bits)
+                        foundInVlcTable = true;
+                        this.stream.write(codeAndBitsPair.getKey(), codeAndBitsPair.getValue());
+                    }
+                }
 
-                this.compressedBitCount += 20;
-//                }
+                if (!foundInVlcTable) { // Fixed length code
+
+                    this.stream.write(0b0000_01, 6); // ESCAPE (6 bits)
+                    this.stream.write(run, 6); // RUN (6 bits)
+                    this.stream.write(level, 8); // LEVEL (8 bits)
+
+                    this.compressedBitCount += 20;
+                }
             }
         }
     }

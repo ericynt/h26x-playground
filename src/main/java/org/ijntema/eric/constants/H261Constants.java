@@ -144,7 +144,7 @@ public class H261Constants {
 
         Map<Integer, Pair<Integer, Integer>> vlcTableTcoeff9 = new HashMap<>();
         vlcTableTcoeff9.put(-1, new Pair<>(0b0000_101, 7));
-        vlcTableTcoeff9.put(-2, new Pair<>(0b0000_0000_1000_1, 12));
+        vlcTableTcoeff9.put(-2, new Pair<>(0b0000_0000_1000_1, 13));
 
         Map<Integer, Pair<Integer, Integer>> vlcTableTcoeff10 = new HashMap<>();
         vlcTableTcoeff10.put(-1, new Pair<>(0b0010_0111, 8));
@@ -181,7 +181,7 @@ public class H261Constants {
         vlcTableTcoeff20.put(-1, new Pair<>(0b0000_0001_0111, 12));
 
         Map<Integer, Pair<Integer, Integer>> vlcTableTcoeff21 = new HashMap<>();
-        vlcTableTcoeff21.put(-1, new Pair<>(0b0000_0001_0110, 12));
+        vlcTableTcoeff21.put(1, new Pair<>(0b0000_0001_0110, 12));
 
         Map<Integer, Pair<Integer, Integer>> vlcTableTcoeff22 = new HashMap<>();
         vlcTableTcoeff22.put(-1, new Pair<>(0b0000_0000_1111_1, 13));
