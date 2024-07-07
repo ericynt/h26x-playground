@@ -82,10 +82,10 @@ public class H261Encoder {
                 }
 
                 String bitrateString = String.format("Bitrate: %.0f kbit/s", bitrate);
-                String spaceSavingString = String.format("Compr. ratio: %.0f:1", compressionRatio);
+                String compressionRatioString = String.format("Compr. ratio: %.0f:1", compressionRatio);
                 int[][][] yCbCrMatrix = rgbToYCbCr(
                         this.frameGenerator
-                                .generateFrame(bitrateString + "\n" + spaceSavingString)
+                                .generateFrame(bitrateString + "\n" + compressionRatioString)
                 );
 
                 for (int i = 0; i < GOB_ROWS; i++) {
