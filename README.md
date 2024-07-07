@@ -29,3 +29,7 @@ On the left the RGB input frame, on the right the H.261 encoded and then decoded
 - Not intended for production use
 - Use this project at your own risk
 - By updating the Quant (1 - 31) in H261Constants the amount of compression can be adjusted
+
+## Known issues
+- Can't handle completely black colors
+- VLC for Huffman are not working
