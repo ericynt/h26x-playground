@@ -38,7 +38,7 @@ public class FrameGenerator extends JPanel implements Runnable {
     private int    animationFrame = 0;
     private int    twinkleCounter = 0;
     private double currentAngle   = 0.0; // Current angle in radians
-    private String displayText    = ""; // Text to be displayed in the upper right corner
+    private String displayText    = ""; // Text to be displayed in the upper left corner
 
     private final Random          random       = new Random();
     private final ArrayList<Star> stars        = new ArrayList<>();
@@ -68,7 +68,7 @@ public class FrameGenerator extends JPanel implements Runnable {
         Graphics g = image.getGraphics();
         drawBackground(g);
         drawSpaceInvader(g, invaderX, invaderY, animationFrame);
-        drawText(g, displayText); // Draw the text in the upper right corner
+        drawText(g, displayText); // Draw the text in the upper left corner
         g.dispose();
 
         return image;
