@@ -16,10 +16,10 @@
 - Motion vectors support
 
 ## How to start
-- mvn clean install
-- Start H261 Encoder
+- Build: mvn compile
+- Start H261 Encoder: mvn exec:java -Dexec.mainClass=org.ijntema.eric.encoders.H261Encoder
 - Install ffmpeg
-- Open stream: 'ffplay udp://127.0.0.1:55555 -loglevel debug' 
+- Open stream: ffplay udp://127.0.0.1:55555 -loglevel debug 
 
 ## Remarks
 - Made to understand how the algorithm works
