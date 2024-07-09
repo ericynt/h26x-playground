@@ -4,6 +4,7 @@
 
 ![encoder output](/src/main/resources/h261.png) 
 <br/>
+<br/>
 
 ## Application structure
 - FrameGenerator --[RGB frames]--> H261Encoder --[H261 packets]--> UdpStreamer --[UDP datagrams]--> 127.0.0.1:55555
