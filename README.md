@@ -8,7 +8,8 @@
 <br/>
 
 ## Application structure
-- FrameGenerator --[RGB frames]--> H261Encoder --[H261 packets]--> UdpStreamer --[UDP datagrams]--> 127.0.0.1:55555
+![app structure](/src/main/resources/app_structure.png)
+<br/>
 
 ## Features
 - Generates RGB 352 x 288 frames
