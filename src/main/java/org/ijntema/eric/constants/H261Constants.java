@@ -7,7 +7,7 @@ import javafx.util.Pair;
 
 public class H261Constants {
 
-    public static final int                                                QUANT                        = 2;
+    public static final int                                                QUANT                        = 31;
     public static final int                                                PICTURE_WIDTH                = 352;
     public static final int                                                PICTURE_HEIGHT               = 288;
     public static final int                                                GOB_ROWS                     = 6;
